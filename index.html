@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #07070e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+            color: #ccc;
+            user-select: none;
+        }
+        #hud {
+            display: flex;
+            gap: 32px;
+            padding: 0 0 10px;
+            font-size: 15px;
+            letter-spacing: 1.5px;
+        }
+        .hl { color: #444; }
+        .hv { color: #7fff7f; font-weight: bold; }
+        #wrap { position: relative; }
+        canvas { display: block; border: 1px solid #1a1a2e; }
+        #ov {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(7,7,14,0.88);
+        }
+        #ov.hidden { display: none; }
+        #ov-h1 {
+            font-size: 40px;
+            color: #7fff7f;
+            text-shadow: 0 0 24px rgba(127,255,127,0.4);
+            letter-spacing: 6px;
+            margin-bottom: 14px;
+        }
+        .ov-sub { font-size: 14px; color: #777; margin-bottom: 6px; letter-spacing: 1px; }
+        #ov-btn {
+            margin-top: 22px;
+            padding: 9px 32px;
+            font-family: inherit;
+            font-size: 16px;
+            letter-spacing: 3px;
+            background: transparent;
+            color: #7fff7f;
+            border: 1px solid #7fff7f;
+            cursor: pointer;
+        }
+        #ov-btn:hover { background: rgba(127,255,127,0.1); }
+    </style>
+</head>
+<body>
+<div id="hud">
+    <span><span class="hl">LEVEL </span><span class="hv" id="hv-lvl">1</span></span>
+    <span><span class="hl">GEMS </span><span class="hv" id="hv-gems">0</span><span class="hl">/10</span></span>
+    <span><span class="hl">LIVES </span><span class="hv" id="hv-lives">&#9829;&#9829;&#9829;</span></span>
+    <span><span class="hl">SCORE </span><span class="hv" id="hv-score">0</span></span>
+</div>
+<div id="wrap">
+    <canvas id="c"></canvas>
+    <div id="ov">
+        <div id="ov-h1">SNAKE</div>
+        <div class="ov-sub" id="ov-s1">Collect 10 gems per level &mdash; 10 levels total</div>
+        <div class="ov-sub" id="ov-s2">Screen wraps &bull; 3 lives &bull; Arrow keys to move</div>
+        <button id="ov-btn">START GAME</button>
+    </div>
+</div>
+<script>
+// ── Constants ────────────────────────────────────────────────────────
+const COLS = 30, ROWS = 20, CS = 20;
+const GEMS_PER_LEVEL = 10, MAX_LEVELS = 10, START_LIVES = 3;
+const DEATH_DUR = 900, LEVELDONE_DUR = 1200;
+
+const LEVEL_CFG = Array.from({length: MAX_LEVELS}, (_, i) => ({
+    speed: Math.round(190 - i * 13), // ms per step: 190 -> 71
+    bars:  i * 2,                    // barricades: 0 -> 18
+}));
+
+// ── Canvas ───────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+canvas.width  = COLS * CS;
+canvas.height = ROWS * CS;
+const ctx = canvas.getContext('2d');
+
+// ── Utilities ────────────────────────────────────────────────────────
+const cellKey = p => `${p.x},${p.y}`;
+const randInt = n => Math.floor(Math.random() * n);
+
+function randFreeCell(blocked) {
+    let p;
+    do { p = {x: randInt(COLS), y: randInt(ROWS)}; } while (blocked.has(cellKey(p)));
+    return p;
+}
+
+// ── State ────────────────────────────────────────────────────────────
+let G = null;
+
+function newGame() {
+    G = { level: 1, lives: START_LIVES, score: 0 };
+    beginLevel();
+}
+
+function beginLevel() {
+    const cfg = LEVEL_CFG[G.level - 1];
+    const cx = Math.floor(COLS / 2), cy = Math.floor(ROWS / 2);
+
+    G.snake    = [{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}];
+    G.dir      = {x:1, y:0};
+    G.nextDir  = {x:1, y:0};
+    G.gem      = null;
+    G.gemsDone = 0;
+    G.speed    = cfg.speed;
+    G.bars     = [];
+    G.phase    = 'playing';
+    G.stepAt   = performance.now() + G.speed;
+    G.phaseAt  = 0;
+
+    // Block spawn area so barricades don't overlap
+    const blocked = new Set(
+        [{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy},
+         {x:cx+1,y:cy},{x:cx+2,y:cy},{x:cx+3,y:cy}].map(cellKey)
+    );
+
+    for (let i = 0; i < cfg.bars; i++) {
+        const b = randFreeCell(blocked);
+        blocked.add(cellKey(b));
+        G.bars.push(b);
+    }
+
+    spawnGem();
+}
+
+function spawnGem() {
+    const blocked = new Set([...G.snake, ...G.bars].map(cellKey));
+    G.gem   = randFreeCell(blocked);
+    G.gemAt = performance.now();
+}
+
+// ── Game step ────────────────────────────────────────────────────────
+function step(now) {
+    G.dir = G.nextDir;
+    const head = {
+        x: (G.snake[0].x + G.dir.x + COLS) % COLS,
+        y: (G.snake[0].y + G.dir.y + ROWS) % ROWS,
+    };
+    const hk = cellKey(head);
+
+    if (G.bars.some(b => cellKey(b) === hk)) { die(now); return; }
+
+    const ate = G.gem && cellKey(G.gem) === hk;
+    // When eating, tail stays (growth), so include full body in self-check
+    const body = ate ? G.snake : G.snake.slice(0, -1);
+    if (body.some(s => cellKey(s) === hk)) { die(now); return; }
+
+    G.snake.unshift(head);
+
+    if (ate) {
+        G.gemsDone++;
+        G.score += G.level * 100;
+        if (G.gemsDone >= GEMS_PER_LEVEL) {
+            G.gem     = null;
+            G.score  += G.level * 500;
+            G.phase   = 'levelDone';
+            G.phaseAt = now;
+        } else {
+            spawnGem();
+        }
+    } else {
+        G.snake.pop();
+    }
+}
+
+function die(now) {
+    G.lives--;
+    G.phase   = 'dying';
+    G.phaseAt = now;
+}
+
+// ── Draw ─────────────────────────────────────────────────────────────
+function draw(now) {
+    ctx.fillStyle = '#07070e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.strokeStyle = '#0d0d1a';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x <= COLS; x++) {
+        ctx.beginPath(); ctx.moveTo(x*CS, 0); ctx.lineTo(x*CS, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y <= ROWS; y++) {
+        ctx.beginPath(); ctx.moveTo(0, y*CS); ctx.lineTo(canvas.width, y*CS); ctx.stroke();
+    }
+
+    if (!G) return;
+
+    G.bars.forEach(b => drawBar(b));
+
+    if (G.gem) drawGem(G.gem, now);
+
+    const dying = G.phase === 'dying';
+    const flash = dying && Math.floor((now - G.phaseAt) / 85) % 2 === 1;
+    G.snake.forEach((seg, i) => drawSeg(seg, i, G.snake.length, flash));
+
+    // Phase overlay text on canvas
+    if (G.phase === 'levelDone') {
+        const alpha = Math.min(1, (now - G.phaseAt) / 150);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = '#7fff7f';
+        ctx.shadowBlur  = 30;
+        ctx.fillStyle   = '#7fff7f';
+        ctx.font        = 'bold 30px "Courier New"';
+        ctx.textAlign   = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('LEVEL COMPLETE!', canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+    }
+
+    if (dying) {
+        const t = (now - G.phaseAt) / DEATH_DUR;
+        const msg = G.lives > 0
+            ? `LIFE LOST  (${G.lives} left)`
+            : 'GAME OVER!';
+        ctx.save();
+        ctx.globalAlpha  = Math.min(1, t * 2.5);
+        ctx.shadowColor  = '#ff4444';
+        ctx.shadowBlur   = 20;
+        ctx.fillStyle    = '#ff5555';
+        ctx.font         = 'bold 26px "Courier New"';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(msg, canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+    }
+
+    // HUD
+    document.getElementById('hv-lvl').textContent   = G.level;
+    document.getElementById('hv-gems').textContent  = G.gemsDone;
+    document.getElementById('hv-lives').textContent =
+        '♥'.repeat(Math.max(0, G.lives)) +
+        '♡'.repeat(Math.max(0, START_LIVES - G.lives));
+    document.getElementById('hv-score').textContent = G.score;
+}
+
+function drawBar(b) {
+    const x = b.x*CS+1, y = b.y*CS+1, W = CS-2, H = CS-2;
+    ctx.fillStyle = '#3d2812';
+    ctx.fillRect(x, y, W, H);
+    ctx.fillStyle = '#5c3e20';
+    ctx.fillRect(x, y, W, 3);
+    ctx.fillRect(x, y, 3, H);
+    ctx.fillStyle = '#231508';
+    ctx.fillRect(x+W-3, y, 3, H);
+    ctx.fillRect(x, y+H-3, W, 3);
+}
+
+function drawGem(g, now) {
+    const cx = g.x*CS + CS/2;
+    const cy = g.y*CS + CS/2;
+    const t  = (now - G.gemAt) / 1000;
+    const r  = (CS/2 - 2) * (1 + 0.12 * Math.sin(t * 5));
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 2);
+
+    const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.2);
+    grd.addColorStop(0, 'rgba(0,255,255,0.25)');
+    grd.addColorStop(1, 'rgba(0,255,255,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(0, 0, r * 2.2, 0, Math.PI * 2); ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(0, -r); ctx.lineTo(r * 0.65, 0);
+    ctx.lineTo(0, r);  ctx.lineTo(-r * 0.65, 0);
+    ctx.closePath();
+    const fg = ctx.createLinearGradient(0, -r, 0, r);
+    fg.addColorStop(0,    '#ffffff');
+    fg.addColorStop(0.35, '#00ffff');
+    fg.addColorStop(1,    '#006688');
+    ctx.fillStyle = fg;
+    ctx.fill();
+
+    ctx.restore();
+}
+
+function drawSeg(seg, i, len, flash) {
+    const x = seg.x*CS+1, y = seg.y*CS+1, W = CS-2, H = CS-2;
+    const frac = 1 - i / Math.max(len, 1);
+
+    if (i === 0) {
+        ctx.fillStyle = flash ? '#bb2222' : '#7fff7f';
+        if (!flash) { ctx.shadowColor = '#7fff7f'; ctx.shadowBlur = 10; }
+    } else {
+        const l = Math.round(8 + frac * 33);
+        ctx.fillStyle = flash
+            ? `hsl(0,55%,${l + 8}%)`
+            : `hsl(120,65%,${l}%)`;
+    }
+
+    roundRect(x, y, W, H, i === 0 ? 5 : 3);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    if (i === 0 && !flash) {
+        ctx.fillStyle = '#001500';
+        eyeOffsets(G.dir).forEach(([ox, oy]) => ctx.fillRect(x + ox, y + oy, 3, 3));
+    }
+}
+
+function eyeOffsets(d) {
+    const E = CS - 2; // 18
+    if (d.x ===  1) return [[E-5, 2],   [E-5, E-5]];
+    if (d.x === -1) return [[2,   2],   [2,   E-5]];
+    if (d.y === -1) return [[2,   2],   [E-5, 2  ]];
+    return                  [[2,   E-5], [E-5, E-5]];
+}
+
+function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);   ctx.quadraticCurveTo(x+w, y,   x+w, y+r);
+    ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);   ctx.quadraticCurveTo(x,   y+h, x,     y+h-r);
+    ctx.lineTo(x, y+r);     ctx.quadraticCurveTo(x,   y,   x+r,   y);
+    ctx.closePath();
+}
+
+// ── Overlay ──────────────────────────────────────────────────────────
+const ovEl  = document.getElementById('ov');
+const ovH1  = document.getElementById('ov-h1');
+const ovS1  = document.getElementById('ov-s1');
+const ovS2  = document.getElementById('ov-s2');
+const ovBtn = document.getElementById('ov-btn');
+let ovOpen  = false;
+
+function showOv(h1, s1, s2, btn) {
+    if (ovOpen) return;
+    ovOpen = true;
+    ovH1.textContent = h1;
+    ovS1.textContent = s1;
+    ovS2.textContent = s2;
+    ovBtn.textContent = btn;
+    ovEl.classList.remove('hidden');
+}
+
+function hideOv() {
+    ovOpen = false;
+    ovEl.classList.add('hidden');
+}
+
+ovBtn.addEventListener('click', () => { hideOv(); newGame(); });
+
+// ── Main loop ────────────────────────────────────────────────────────
+function loop(now) {
+    requestAnimationFrame(loop);
+
+    if (G) {
+        if (G.phase === 'playing' && now >= G.stepAt) {
+            G.stepAt = now + G.speed;
+            step(now);
+        }
+        if (G.phase === 'dying' && now - G.phaseAt >= DEATH_DUR) {
+            G.lives > 0 ? beginLevel() : (G.phase = 'over');
+        }
+        if (G.phase === 'levelDone' && now - G.phaseAt >= LEVELDONE_DUR) {
+            G.level < MAX_LEVELS ? (G.level++, beginLevel()) : (G.phase = 'win');
+        }
+        if (G.phase === 'over') showOv('GAME OVER', `Score: ${G.score}`, `Reached level ${G.level}`, 'PLAY AGAIN');
+        if (G.phase === 'win')  showOv('YOU WIN!',  `Final score: ${G.score}`, 'All 10 levels conquered!', 'PLAY AGAIN');
+    }
+
+    draw(now);
+}
+
+requestAnimationFrame(loop);
+
+// ── Input ────────────────────────────────────────────────────────────
+const DIRS = {
+    ArrowUp:    {x:0,  y:-1},
+    ArrowDown:  {x:0,  y:1},
+    ArrowLeft:  {x:-1, y:0},
+    ArrowRight: {x:1,  y:0},
+};
+
+document.addEventListener('keydown', e => {
+    const d = DIRS[e.key];
+    if (!d) return;
+    e.preventDefault();
+    if (!G || G.phase !== 'playing') return;
+    if (d.x !== -G.dir.x || d.y !== -G.dir.y) G.nextDir = d;
+});
+</script>
+</body>
+</html>
