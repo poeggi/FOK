@@ -148,6 +148,19 @@ const ACHIEVEMENTS = [
       icon:{p:{A:'#ff4400',B:'#ff9900',C:'#ffdd00'},d:['...A....','..ABA...','.ABBBA..','ABBBBA..','ABCBBBA.','ABCCCBA.','.AAAAAA.','........']}},
 ];
 
+const SHOP_ITEMS = [
+    { id:'cylinder', name:'CYLINDER HAT',  desc:'A distinguished top hat',       price:10000,
+      icon:{p:{A:'#1a1a1a',B:'#333333'},d:['........','..AAAA..','..AAAA..','..AAAA..','.BBBBBB.','........','........','........']}},
+    { id:'monocle',  name:'MONOCLE',       desc:'For the refined serpent',        price:10000,
+      icon:{p:{A:'#aaaaaa',C:'#888888'},d:['..AAAA..', '.A....A.','.A....A.','.A....A.','..AAAA..','.....C..',  '....C...','...C....']}},
+    { id:'shades',   name:'SUNGLASSES',    desc:'Too cool for the grid',          price:5000,
+      icon:{p:{A:'#111111',B:'#1a3050'},d:['.AAA.AAA','ABBBABBB','ABBBABBB','.AAA.AAA','........','........','........','........']}},
+    { id:'crown',    name:'ROYAL CROWN',   desc:'Fit for a snake king',           price:20000,
+      icon:{p:{A:'#ffd700',C:'#ff4444'},d:['A..A..A.','AAAAAAA.','ACAAACA.','AAAAAAA.','........','........','........','........']}},
+    { id:'bow',      name:'BOW TIE',       desc:'Charming and aerodynamic',       price:7000,
+      icon:{p:{A:'#cc2222',B:'#ff4444',C:'#aa0000'},d:['........','AA...AA.','ABBACBBA','AABACBAA','AA...AA.','........','........','........']}},
+];
+
 function drawPixelIcon(x, y, icon, cs) {
     icon.d.forEach((row, ry) => {
         [...row].forEach((c, rx) => {
@@ -472,8 +485,8 @@ const CRED = [
     ['txt','All snakes lost in beta testing.'],['txt','They knew the risks.'],['gap',50],
     ['coins'],['sml','(spend them on absolutely nothing. for now.)'],['gap',50],
     ['sml','(C) 2025 FOK STUDIOS'],['sml','All rights reserved to nobody in particular.'],
-    ['gap',30],['txt','PRESS OK OR ENTER TO EXIT'],['gap',160],
-    ['secret','No Eastereggs here ;)'],['gap',220],
+    ['gap',30],['txt','PRESS OK OR ENTER TO EXIT'],['gap',280],
+    ['secret','No Eastereggs here ;)'],['gap',240],
 ];
 const CRED_H = { title:48, sub:22, hdr:26, txt:22, sml:18, coins:30, secret:32 };
 function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (CRED_H[t]||22); return h; }
@@ -483,10 +496,10 @@ function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (C
 // ================================================================
 // phases: menu|settings|scores|credits|playing|paused|dying|levelDone|nameEntry|quitConfirm
 let phase = 'menu';
-let menuSel = 0, settingsSel = 0, quitConfirmSel = 1, prevPhase = 'playing';
+let menuSel = 0, settingsSel = 0, shopSel = 0, quitConfirmSel = 1, prevPhase = 'playing';
 const MENU_ITEMS     = ['PLAY', 'SETTINGS', 'HIGH SCORES', 'ACHIEVEMENTS', 'SHOP', 'CREDITS'];
 const SETTINGS_ITEMS = ['MUSIC', 'MUSIC STYLE', 'DIFFICULTY', 'SNAKE COLOR', 'BACK'];
-let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0 };
+let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0, shopItems: {} };
 loadCfg();
 
 let level, lives, score;
@@ -499,6 +512,7 @@ let perfectLevel = true, levelWasPerfect = false, fireworks = [];
 let levelBonusCount = 0;
 let nameStr = '', nameCharIdx = 0, nameReason = '';
 let creditsScroll = 0;
+let purchaseParticles = [], purchaseAnimAt = 0;
 let fpsVal = 0, fpsFrames = 0, fpsLast = 0;
 
 function menuTrack() { return cfg.musicStyle === 0 ? 'ambient'     : 'classicMenu'; }
@@ -759,6 +773,74 @@ function drawGem(g,now) {
     }
 }
 
+function triggerPurchaseAnim() {
+    purchaseAnimAt = performance.now();
+    for(let i=0;i<50;i++){
+        const angle=(i/50)*Math.PI*2, spd=1.5+Math.random()*3.5;
+        purchaseParticles.push({
+            x:CW/2, y:CH*0.5,
+            vx:Math.cos(angle)*spd*(0.6+Math.random()),
+            vy:Math.sin(angle)*spd-1.2,
+            size:3+Math.random()*6,
+            color:Math.random()<0.65?'#ffd700':'#ffee88',
+            life:0, maxLife:55+Math.floor(Math.random()*45),
+            rot:Math.random()*Math.PI*2, vrot:(Math.random()-0.5)*0.2,
+        });
+    }
+}
+
+function drawAccessoryCylinder(hx, hy) {
+    ctx.fillStyle='#1a1a1a';
+    ctx.fillRect(hx+3,hy-10,12,9);   // body
+    ctx.fillRect(hx-2,hy-2,22,3);    // brim
+    ctx.fillStyle='#333333';
+    ctx.fillRect(hx+3,hy-3,12,1);    // band
+    ctx.fillStyle='#2a2a2a';
+    ctx.fillRect(hx+3,hy-10,12,1);   // top sheen
+}
+
+function drawAccessoryMonocle(hx, hy) {
+    const e=eyeOffsets(dir)[0];
+    ctx.strokeStyle='#cccccc'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(hx+e[0]+1.5,hy+e[1]+1.5,3.5,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='#888888'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(hx+e[0]+4,hy+e[1]+4); ctx.lineTo(hx+e[0]+8,hy+e[1]+9); ctx.stroke();
+}
+
+function drawAccessoryShades(hx, hy) {
+    const eyes=eyeOffsets(dir);
+    ctx.fillStyle='#111111';
+    eyes.forEach(([ox,oy])=>{ctx.beginPath();ctx.arc(hx+ox+1.5,hy+oy+1.5,4,0,Math.PI*2);ctx.fill();});
+    ctx.fillStyle='#1a3050';
+    eyes.forEach(([ox,oy])=>{ctx.beginPath();ctx.arc(hx+ox+1.5,hy+oy+1.5,2.5,0,Math.PI*2);ctx.fill();});
+    if(eyes.length>=2){
+        const x1=hx+eyes[0][0]+1.5, y1=hy+eyes[0][1]+1.5, x2=hx+eyes[1][0]+1.5, y2=hy+eyes[1][1]+1.5;
+        ctx.strokeStyle='#111111'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    }
+}
+
+function drawAccessoryCrown(hx, hy) {
+    ctx.fillStyle='#ffd700';
+    ctx.fillRect(hx+1,hy-12,4,10); ctx.fillRect(hx+7,hy-15,5,13); ctx.fillRect(hx+14,hy-12,4,10);
+    ctx.fillRect(hx,hy-5,19,5);
+    ctx.fillStyle='#cc8800'; ctx.fillRect(hx,hy-5,19,1);
+    ctx.fillStyle='#ff4444'; ctx.fillRect(hx+2,hy-4,2,2);
+    ctx.fillStyle='#4488ff'; ctx.fillRect(hx+8,hy-4,3,2);
+    ctx.fillStyle='#ff4444'; ctx.fillRect(hx+15,hy-4,2,2);
+}
+
+function drawAccessoryBow(hx, hy) {
+    ctx.fillStyle='#cc2222';
+    ctx.fillRect(hx+4,hy+7,4,5);   // left wing
+    ctx.fillRect(hx+11,hy+7,4,5);  // right wing
+    ctx.fillStyle='#ff4444';
+    ctx.fillRect(hx+4,hy+7,4,2);
+    ctx.fillRect(hx+11,hy+7,4,2);
+    ctx.fillStyle='#aa0000';
+    ctx.fillRect(hx+8,hy+8,3,3);   // knot center
+}
+
 function drawSnake(flash) {
     const sc=SNAKE_COLORS[cfg.snakeColor||0];
     snake.forEach((seg,i)=>{
@@ -771,7 +853,15 @@ function drawSnake(flash) {
             ctx.fillStyle=flash?`hsl(0,55%,${l+8}%)`:`hsl(${sc.h},65%,${l}%)`;
         }
         rr(x,y,sw,sh,i===0?5:3); ctx.fill(); ctx.shadowBlur=0;
-        if(i===0&&!flash){ctx.fillStyle='#001500'; eyeOffsets(dir).forEach(([ox,oy])=>ctx.fillRect(x+ox,y+oy,3,3));}
+        if(i===0&&!flash){
+            ctx.fillStyle='#001500'; eyeOffsets(dir).forEach(([ox,oy])=>ctx.fillRect(x+ox,y+oy,3,3));
+            const si=cfg.shopItems||{};
+            if(si.shades)    drawAccessoryShades(x,y);
+            if(si.monocle)   drawAccessoryMonocle(x,y);
+            if(si.bow)       drawAccessoryBow(x,y);
+            if(si.cylinder)  drawAccessoryCylinder(x,y);
+            if(si.crown)     drawAccessoryCrown(x,y);
+        }
     });
 }
 
@@ -945,16 +1035,56 @@ function drawAchPopups(now) {
 
 function drawShop() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=24; ct('SHOP',CW/2,80,'#ffd700',42); ctx.shadowBlur=0;
-    ctx.font='bold 18px "Courier New"'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle='#555'; ctx.fillText('WORK IN PROGRESS',CW/2,CH/2-18);
-    ctx.font='12px "Courier New"'; ctx.fillStyle='#3a3a3a'; ctx.fillText('Come back later!',CW/2,CH/2+14);
-    ctx.font='10px "Courier New"'; ctx.fillStyle='#2a3a2a'; ctx.fillText('(We accept FOKoins)',CW/2,CH/2+36);
-    const coins=getFOKoins();
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=20; ct('SHOP',CW/2,28,'#ffd700',26); ctx.shadowBlur=0;
+    const coins=getFOKoins(), si=cfg.shopItems||{};
+    const startY=56, rowH=58;
+    SHOP_ITEMS.forEach((item,i)=>{
+        const y=startY+i*rowH, sel=i===shopSel, owned=!!si[item.id], canAfford=coins>=item.price;
+        ctx.fillStyle=sel?'rgba(40,64,40,0.55)':'rgba(10,10,10,0.3)';
+        rr(8,y,CW-16,rowH-4,5); ctx.fill();
+        if(sel){ctx.strokeStyle='#6aaa6a';ctx.lineWidth=1.5;rr(8,y,CW-16,rowH-4,5);ctx.stroke();}
+        drawPixelIcon(16,y+(rowH-4)/2-8,item.icon,2);
+        ctx.textAlign='left'; ctx.textBaseline='top';
+        ctx.font='bold 11px "Courier New"';
+        ctx.fillStyle=owned?'#7fff7f':sel?'#dddddd':'#aaaaaa';
+        ctx.fillText(item.name,46,y+8);
+        ctx.font='9px "Courier New"'; ctx.fillStyle='#555555';
+        ctx.fillText(item.desc,46,y+24);
+        ctx.textAlign='right';
+        if(owned){
+            ctx.font='bold 10px "Courier New"'; ctx.fillStyle='#4a8a4a';
+            ctx.fillText('OWNED',CW-18,y+12);
+        } else {
+            ctx.font='bold 10px "Courier New"'; ctx.fillStyle=canAfford?'#ffd700':'#553322';
+            ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+12);
+            if(sel){ctx.font='8px "Courier New"';ctx.fillStyle=canAfford?'#3a7a3a':'#553322';
+                ctx.fillText(canAfford?'ENTER to buy':'Not enough FK',CW-18,y+28);}
+        }
+    });
+    ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
-    ct(`YOUR BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-36,'#ffd700',12);
+    ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',11);
     ctx.shadowBlur=0;
-    ct('Any key or OK to return',CW/2,CH-14,'#222',10,false);
+    ct('UP/DOWN navigate  |  ESC back',CW/2,CH-12,'#1a2a1a',9,false);
+    // Purchase particles
+    const now=performance.now();
+    purchaseParticles=purchaseParticles.filter(p=>{
+        p.life++;p.x+=p.vx;p.y+=p.vy;p.vy+=0.09;p.rot+=p.vrot;
+        if(p.life>=p.maxLife||p.y>CH+20) return false;
+        const a=p.life<10?p.life/10:p.life>p.maxLife-15?1-(p.life-(p.maxLife-15))/15:1;
+        ctx.save();ctx.globalAlpha=a;ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+        ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
+        ctx.restore();return true;
+    });
+    // "PURCHASED!" flash
+    const buyAge=now-purchaseAnimAt;
+    if(purchaseAnimAt>0&&buyAge<1600){
+        const a=buyAge<180?buyAge/180:buyAge>1200?1-(buyAge-1200)/400:1;
+        ctx.save();ctx.globalAlpha=a;
+        ctx.shadowColor='#7fff7f';ctx.shadowBlur=22;
+        ct('PURCHASED!',CW/2,CH/2+20,'#7fff7f',30);
+        ctx.restore();
+    }
 }
 
 function drawCredits() {
@@ -1208,7 +1338,7 @@ function handleKey(key, pde) {
             else if(menuSel===1){phase='settings';settingsSel=0;}
             else if(menuSel===2)phase='scores';
             else if(menuSel===3)phase='achievements';
-            else if(menuSel===4)phase='shop';
+            else if(menuSel===4){phase='shop';shopSel=0;purchaseAnimAt=0;}
             else{phase='credits';creditsScroll=CH+40;}
             if(pde)pde();
         }
@@ -1232,7 +1362,21 @@ function handleKey(key, pde) {
         if(key==='ArrowRight'&&settingsSel===3){cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;saveCfg();Snd.sfx('nav',cfg.music);}
         if(pde)pde();
     }
-    else if(phase==='scores'||phase==='credits'||phase==='achievements'||phase==='shop'){ phase='menu'; if(pde)pde(); }
+    else if(phase==='scores'||phase==='credits'||phase==='achievements'){ phase='menu'; if(pde)pde(); }
+    else if(phase==='shop'){
+        if(key==='ArrowUp'){ shopSel=(shopSel-1+SHOP_ITEMS.length)%SHOP_ITEMS.length; Snd.sfx('nav',cfg.music); }
+        else if(key==='ArrowDown'){ shopSel=(shopSel+1)%SHOP_ITEMS.length; Snd.sfx('nav',cfg.music); }
+        else if(key==='Enter'){
+            const item=SHOP_ITEMS[shopSel];
+            const si=cfg.shopItems||(cfg.shopItems={});
+            if(item&&!si[item.id]&&getFOKoins()>=item.price){
+                localStorage.setItem(FK_KEY,String(getFOKoins()-item.price));
+                si[item.id]=true; saveCfg();
+                triggerPurchaseAnim(); Snd.sfx('perfect',cfg.music);
+            }
+        }
+        if(pde)pde();
+    }
     else if(phase==='quitConfirm'){
         if(key==='ArrowLeft') quitConfirmSel=0;
         if(key==='ArrowRight') quitConfirmSel=1;
