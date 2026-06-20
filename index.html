@@ -420,12 +420,30 @@ function loadCfg() { try { Object.assign(cfg, JSON.parse(localStorage.getItem(CF
 const ACH_KEY = 'fok-snake-ach';
 let achUnlocked = {};
 let achPopups = [];   // {id, at}
+let confetti = [];
+const CONFETTI_COLS = ['#ff4444','#ff9900','#ffff44','#44ff88','#44ccff','#aa44ff','#ff44cc','#ffffff'];
+function spawnConfetti() {
+    for(let i=0;i<60;i++){
+        confetti.push({
+            x: CW*0.65+Math.random()*CW*0.35,
+            y: -6-Math.random()*30,
+            vx: -0.5-Math.random()*2.5,
+            vy: 1.2+Math.random()*2.8,
+            rot: Math.random()*Math.PI*2,
+            vrot: (Math.random()-0.5)*0.18,
+            w: 5+Math.random()*6, h: 3+Math.random()*4,
+            color: CONFETTI_COLS[i%CONFETTI_COLS.length],
+            life:0, maxLife:100+Math.floor(Math.random()*80),
+        });
+    }
+}
 function loadAch() { try { achUnlocked = JSON.parse(localStorage.getItem(ACH_KEY) || '{}'); } catch {} }
 function saveAch() { try { localStorage.setItem(ACH_KEY, JSON.stringify(achUnlocked)); } catch {} }
 function unlockAch(id) {
     if(achUnlocked[id]) return;
     achUnlocked[id] = Date.now(); saveAch();
     achPopups.push({ id, at: performance.now() });
+    spawnConfetti();
 }
 loadAch();
 
@@ -454,9 +472,10 @@ const CRED = [
     ['txt','All snakes lost in beta testing.'],['txt','They knew the risks.'],['gap',50],
     ['coins'],['sml','(spend them on absolutely nothing. for now.)'],['gap',50],
     ['sml','(C) 2025 FOK STUDIOS'],['sml','All rights reserved to nobody in particular.'],
-    ['gap',30],['txt','PRESS OK OR ENTER TO EXIT'],['gap',100],
+    ['gap',30],['txt','PRESS OK OR ENTER TO EXIT'],['gap',160],
+    ['secret','No Eastereggs here ;)'],['gap',220],
 ];
-const CRED_H = { title:48, sub:22, hdr:26, txt:22, sml:18, coins:30 };
+const CRED_H = { title:48, sub:22, hdr:26, txt:22, sml:18, coins:30, secret:32 };
 function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (CRED_H[t]||22); return h; }
 
 // ================================================================
@@ -465,7 +484,7 @@ function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (C
 // phases: menu|settings|scores|credits|playing|paused|dying|levelDone|nameEntry|quitConfirm
 let phase = 'menu';
 let menuSel = 0, settingsSel = 0, quitConfirmSel = 1, prevPhase = 'playing';
-const MENU_ITEMS     = ['PLAY', 'SETTINGS', 'HIGH SCORES', 'ACHIEVEMENTS', 'CREDITS'];
+const MENU_ITEMS     = ['PLAY', 'SETTINGS', 'HIGH SCORES', 'ACHIEVEMENTS', 'SHOP', 'CREDITS'];
 const SETTINGS_ITEMS = ['MUSIC', 'MUSIC STYLE', 'DIFFICULTY', 'SNAKE COLOR', 'BACK'];
 let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0 };
 loadCfg();
@@ -766,7 +785,8 @@ function drawMenu() {
     ct('S N A K E',CW/2,78,'#7fff7f',50);
     ctx.shadowBlur=0;
     ct('F O K   E D I T I O N',CW/2,122,'#2a3a2a',12);
-    MENU_ITEMS.forEach((item,i)=>menuItem(item,174+i*38,i===menuSel));
+    const msp=MENU_ITEMS.length<=5?38:30;
+    MENU_ITEMS.forEach((item,i)=>menuItem(item,162+i*msp,i===menuSel));
     ct(`DIFF: ${DIFF[cfg.diff].label}  |  MUSIC: ${cfg.music?'ON':'OFF'}  |  STYLE: ${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,342,'#222',10,false);
     ct('UP/DOWN  |  ENTER to select',CW/2,360,'#1a1a1a',10,false);
     // FOKoins pinned to lower-right corner
@@ -834,8 +854,11 @@ function drawScores() {
             const y=94+i*30;
             ctx.fillStyle=i===0?'#ffd700':i<3?'#c0c0c0':'#777';
             const rank=`${i+1}.`.padStart(3);
-            ctx.fillText(`${rank}  ${(s.name||'???').padEnd(MAX_NAME)}  ${String(s.score).padStart(7)}  LVL ${s.level}`,44,y);
-            drawMiniSnake(6, y, s.color||0);
+            const line=`${rank}  ${(s.name||'???').padEnd(MAX_NAME)}  ${String(s.score).padStart(7)}  LVL ${s.level}`;
+            const tw=ctx.measureText(line).width;
+            const tx=CW/2-tw/2;
+            ctx.fillText(line,tx,y);
+            drawMiniSnake(tx-26, y, s.color||0);
         });
         ctx.textAlign='center';
     }
@@ -888,6 +911,14 @@ function drawAchievements() {
 }
 
 function drawAchPopups(now) {
+    confetti=confetti.filter(c=>{
+        c.life++; c.x+=c.vx; c.y+=c.vy; c.vy+=0.05; c.rot+=c.vrot;
+        if(c.life>=c.maxLife||c.y>CH+20) return false;
+        const a=c.life<15?c.life/15:c.life>c.maxLife-25?1-(c.life-(c.maxLife-25))/25:1;
+        ctx.save(); ctx.globalAlpha=a; ctx.translate(c.x,c.y); ctx.rotate(c.rot);
+        ctx.fillStyle=c.color; ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);
+        ctx.restore(); return true;
+    });
     const DUR=3800, FADE_IN=280, FADE_OUT=500;
     achPopups=achPopups.filter(p=>now-p.at<DUR);
     achPopups.forEach((p,i)=>{
@@ -910,6 +941,20 @@ function drawAchPopups(now) {
         ctx.restore();
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
+}
+
+function drawShop() {
+    drawGrid(); drawOvBg(0.92);
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=24; ct('SHOP',CW/2,80,'#ffd700',42); ctx.shadowBlur=0;
+    ctx.font='bold 18px "Courier New"'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#555'; ctx.fillText('WORK IN PROGRESS',CW/2,CH/2-18);
+    ctx.font='12px "Courier New"'; ctx.fillStyle='#3a3a3a'; ctx.fillText('Come back later!',CW/2,CH/2+14);
+    ctx.font='10px "Courier New"'; ctx.fillStyle='#2a3a2a'; ctx.fillText('(We accept FOKoins)',CW/2,CH/2+36);
+    const coins=getFOKoins();
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
+    ct(`YOUR BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-36,'#ffd700',12);
+    ctx.shadowBlur=0;
+    ct('Any key or OK to return',CW/2,CH-14,'#222',10,false);
 }
 
 function drawCredits() {
@@ -936,6 +981,11 @@ function drawCredits() {
                 case 'coins':
                     ctx.shadowColor='#ffd700'; ctx.shadowBlur=10;
                     ct(`YOUR FOKOINS: ${getFOKoins().toLocaleString()}`, CW/2, y+14, '#ffd700', 16);
+                    ctx.shadowBlur=0; break;
+                case 'secret':
+                    ctx.shadowColor='#ff4444'; ctx.shadowBlur=14;
+                    ctx.font='italic bold 16px "Courier New"'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillStyle='#ff5555'; ctx.fillText(val, CW/2, y+14);
                     ctx.shadowBlur=0; break;
             }
         }
@@ -1146,7 +1196,7 @@ function handleKey(key, pde) {
             escReadyAt=performance.now()+1000; if(pde)pde(); return;
         }
         if(phase==='settings'){ phase='menu'; Snd.sfx('nav',cfg.music); if(pde)pde(); return; }
-        if(phase==='scores'||phase==='credits'||phase==='achievements'){ phase='menu'; if(pde)pde(); return; }
+        if(phase==='scores'||phase==='credits'||phase==='achievements'||phase==='shop'){ phase='menu'; if(pde)pde(); return; }
     }
 
     if(phase==='menu'){
@@ -1158,6 +1208,7 @@ function handleKey(key, pde) {
             else if(menuSel===1){phase='settings';settingsSel=0;}
             else if(menuSel===2)phase='scores';
             else if(menuSel===3)phase='achievements';
+            else if(menuSel===4)phase='shop';
             else{phase='credits';creditsScroll=CH+40;}
             if(pde)pde();
         }
@@ -1181,7 +1232,7 @@ function handleKey(key, pde) {
         if(key==='ArrowRight'&&settingsSel===3){cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;saveCfg();Snd.sfx('nav',cfg.music);}
         if(pde)pde();
     }
-    else if(phase==='scores'||phase==='credits'||phase==='achievements'){ phase='menu'; if(pde)pde(); }
+    else if(phase==='scores'||phase==='credits'||phase==='achievements'||phase==='shop'){ phase='menu'; if(pde)pde(); }
     else if(phase==='quitConfirm'){
         if(key==='ArrowLeft') quitConfirmSel=0;
         if(key==='ArrowRight') quitConfirmSel=1;
@@ -1300,7 +1351,7 @@ function loop(now) {
 
     // Music routing (skip paused / quitConfirm states)
     if(phase!=='paused'&&phase!=='quitConfirm'){
-        const menuPhase=['menu','settings','scores','credits','nameEntry','achievements'].includes(phase);
+        const menuPhase=['menu','settings','scores','credits','nameEntry','achievements','shop'].includes(phase);
         const gamePhase=['playing','dying','levelDone'].includes(phase);
         const wt=menuPhase?menuTrack():gamePhase?gameTrack():null;
         if(cfg.music&&wt) Snd.play(wt);
@@ -1323,6 +1374,7 @@ function loop(now) {
     else if(phase==='settings')     {drawSettings();       showHUD(false);}
     else if(phase==='scores')       {drawScores();         showHUD(false);}
     else if(phase==='achievements') {drawAchievements();   showHUD(false);}
+    else if(phase==='shop')         {drawShop();           showHUD(false);}
     else if(phase==='credits')      {drawCredits();        showHUD(false);}
     else if(phase==='nameEntry')    {drawNameEntry(now);}
     else if(phase==='quitConfirm')  {drawQuitConfirm();}
