@@ -89,9 +89,9 @@
                 flex: 1; min-width: 0; width: auto;
                 display: flex; align-items: center; justify-content: center;
             }
-            /* Formula: 100dvh * 1.5 fills full height; 100% caps to available wrap width */
+            /* 32px = 2 * 16px side-info padding, so canvas margins match SND/FPS inset exactly */
             canvas#c {
-                width: min(calc(100dvh * 1.5), 100%);
+                width: min(calc((100dvh - 32px) * 1.5), 100%);
                 height: auto;
             }
             /* Right controls panel — 160px gives d-pad comfortable margins */
