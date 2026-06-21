@@ -10,33 +10,35 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Snake FOK">
     <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background: #07070e;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; padding: 8px; gap: 10px;
-            font-family: 'Courier New', Courier, monospace; color: #ccc;
+            font-family: 'Press Start 2P', 'Courier New', monospace; color: #ccc;
             user-select: none; overflow: hidden;
         }
         #hud {
-            display: flex; flex-direction: column; gap: 3px; font-size: 13px;
+            display: flex; flex-direction: column; gap: 3px;
             width: min(600px, calc(100vw - 16px));
-            font-size: 15px; letter-spacing: 1.2px;
+            font-size: 8px; letter-spacing: 0;
             opacity: 1; transition: opacity 0.15s;
         }
         #hud.hidden { opacity: 0; pointer-events: none; }
         .hud-row { display: flex; justify-content: space-between; width: 100%; }
-        .hl { color: #888; } .hv { color: #7fff7f; font-weight: bold; }
+        .hl { color: #888; } .hv { color: #7fff7f; }
         #topbar {
             width: min(600px, calc(100vw - 16px));
             display: flex; justify-content: space-between; align-items: center; padding: 0 2px;
         }
-        #fps-el { font: 13px 'Courier New',monospace; color: #7aaa7a; letter-spacing: 1px; }
+        #fps-el { font: 8px 'Press Start 2P',monospace; color: #7aaa7a; }
         #btn-mute {
             width: 38px; height: 24px;
             background: #0d180d; border: 1px solid #3a5a3a;
-            color: #7fff7f; font: bold 13px 'Courier New',monospace;
+            color: #7fff7f; font: 8px 'Press Start 2P',monospace;
             cursor: pointer; border-radius: 3px; padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
@@ -51,7 +53,7 @@
         .sbtn {
             width: 54px; height: 54px;
             background: #0d180d; border: 1px solid #3a5a3a; color: #7fff7f;
-            font: bold 13px 'Courier New',monospace; cursor: pointer; border-radius: 6px;
+            font: 8px 'Press Start 2P',monospace; cursor: pointer; border-radius: 6px;
             -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center;
         }
         .sbtn:active { background: #1a3a1a; border-color: #7fff7f; }
@@ -82,9 +84,8 @@
                 padding: 16px 0;
             }
             #topbar { width: auto; padding: 0; gap: 8px; }
-            #fps-el { position: absolute; bottom: 16px; left: 0; font-size: 11px; }
-            #btn-mute { font-size: 11px; }
-            #hud { width: auto; flex-direction: column; gap: 6px; font-size: 11px; letter-spacing: 0.5px; }
+            #fps-el { position: absolute; bottom: 16px; left: 0; }
+            #hud { width: auto; flex-direction: column; gap: 6px; letter-spacing: 0; }
             .hud-row { flex-direction: column; gap: 3px; }
             #wrap {
                 flex: 1; min-width: 0; width: auto;
@@ -122,7 +123,7 @@
     <div id="hud" class="hidden">
         <div class="hud-row">
             <span><span class="hl">LEVEL </span><span class="hv" id="hv-lvl">1</span></span>
-            <span><span class="hl">LIVES </span><span class="hv" id="hv-lives">&#9829;&#9829;&#9829;</span></span>
+            <span><span class="hl">LIVES </span><span class="hv" id="hv-lives">3</span></span>
         </div>
         <div class="hud-row">
             <span><span class="hl">GEMS </span><span class="hv" id="hv-gems">0</span><span class="hl">/10</span></span>
@@ -552,7 +553,7 @@ const CRED = [
     ['gap',30],['txt','PRESS OK OR ENTER TO EXIT'],['gap',280],
     ['secret','No Eastereggs here ;)'],['gap',240],
 ];
-const CRED_H = { title:48, sub:22, hdr:26, txt:22, sml:18, coins:30, secret:32 };
+const CRED_H = { title:24, sub:14, hdr:18, txt:14, sml:12, coins:18, secret:18 };
 function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (CRED_H[t]||22); return h; }
 
 // ================================================================
@@ -718,7 +719,7 @@ function showHUD(v) { hudEl.classList.toggle('hidden',!v); }
 function updateHUD() {
     document.getElementById('hv-lvl').textContent   = level;
     document.getElementById('hv-gems').textContent  = gemsDone;
-    document.getElementById('hv-lives').textContent = '♥'.repeat(Math.max(0,lives))+'♡'.repeat(Math.max(0,START_LIVES-lives));
+    document.getElementById('hv-lives').textContent = Math.max(0,lives);
     document.getElementById('hv-score').textContent = score;
 }
 
@@ -744,15 +745,15 @@ function drawGrid() {
     for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CS);ctx.lineTo(CW,y*CS);ctx.stroke();}
 }
 function drawOvBg(a) { ctx.fillStyle=`rgba(7,7,14,${a||0.88})`; ctx.fillRect(0,0,CW,CH); }
-function ct(text,x,y,color,size,bold) {
+function ct(text,x,y,color,size) {
     ctx.fillStyle=color||'#7fff7f';
-    ctx.font=`${bold!==false?'bold ':''}${size||16}px "Courier New"`;
+    ctx.font=`${size||10}px "Press Start 2P"`;
     ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(text,x,y);
 }
 function menuItem(text,y,sel) {
     ctx.globalAlpha=sel?1:0.78;
     if(sel){ctx.shadowColor='#7fff7f';ctx.shadowBlur=14;}
-    ct(sel?('> '+text+' <'):text,CW/2,y,sel?'#7fff7f':'#cccccc',20);
+    ct(sel?('> '+text+' <'):text,CW/2,y,sel?'#7fff7f':'#cccccc',9);
     ctx.shadowBlur=0; ctx.globalAlpha=1;
 }
 
@@ -938,16 +939,16 @@ function drawMenu() {
     drawGrid();
     for(let y=0;y<CH;y+=3){ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,y,CW,1);}
     ctx.shadowColor='#7fff7f'; ctx.shadowBlur=28;
-    ct('S N A K E',CW/2,78,'#7fff7f',50);
+    ct('S N A K E',CW/2,78,'#7fff7f',20);
     ctx.shadowBlur=0;
-    ct('F O K   E D I T I O N',CW/2,122,'#4a7a4a',13);
+    ct('F O K   E D I T I O N',CW/2,122,'#4a7a4a',8);
     const msp=MENU_ITEMS.length<=5?38:30;
     MENU_ITEMS.forEach((item,i)=>menuItem(item,162+i*msp,i===menuSel));
-    ct(`DIFF: ${DIFF[cfg.diff].label}  |  MUSIC: ${cfg.music?'ON':'OFF'}  |  STYLE: ${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,342,'#999',12,false);
+    ct(`DIFF: ${DIFF[cfg.diff].label}  |  MUSIC: ${cfg.music?'ON':'OFF'}  |  STYLE: ${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,342,'#999',8,false);
     // Bottom bar: version left, hint center, FOKoins right — all same font as FOK EDITION
     const coins=getFOKoins();
     ctx.save();
-    ctx.font='13px "Courier New"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
+    ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
     ctx.fillStyle='#4a7a4a'; ctx.textAlign='left';
     ctx.fillText('v5', 10, CH-8);
     ctx.textAlign='center';
@@ -959,7 +960,7 @@ function drawMenu() {
 
 function drawSettings() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20; ct('SETTINGS',CW/2,60,'#7fff7f',30); ctx.shadowBlur=0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20; ct('SETTINGS',CW/2,60,'#7fff7f',11); ctx.shadowBlur=0;
     const sc=SNAKE_COLORS[cfg.snakeColor||0];
     const items = [
         'MUSIC: '+(cfg.music?'ON':'OFF'),
@@ -982,7 +983,7 @@ function drawSettings() {
         }
         ctx.restore();
     }
-    ct('LEFT/RIGHT to change   OK to toggle   ESC to go back',CW/2,CH-14,'#999',11,false);
+    ct('LEFT/RIGHT to change   OK to toggle   ESC to go back',CW/2,CH-14,'#999',8,false);
 }
 
 function drawMiniSnake(x, y, colorIdx) {
@@ -1023,11 +1024,11 @@ function drawScoreHead(cx, cy, colorIdx, si) {
 
 function drawScores() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=18; ct('HIGH SCORES',CW/2,50,'#7fff7f',26); ctx.shadowBlur=0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=18; ct('HIGH SCORES',CW/2,50,'#7fff7f',11); ctx.shadowBlur=0;
     const scores=getScores();
-    if(!scores.length){ ct('No scores yet!',CW/2,CH/2,'#aaa',16,false); }
+    if(!scores.length){ ct('No scores yet!',CW/2,CH/2,'#aaa',8,false); }
     else {
-        ctx.font='13px "Courier New"'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.font='8px "Press Start 2P"'; ctx.textAlign='left'; ctx.textBaseline='middle';
         scores.slice(0,8).forEach((s,i)=>{
             const y=94+i*30;
             ctx.fillStyle=i===0?'#ffd700':i<3?'#dddddd':'#aaaaaa';
@@ -1043,14 +1044,14 @@ function drawScores() {
     }
     const coins=getFOKoins();
     ctx.shadowColor='#ffd700'; ctx.shadowBlur=3;
-    ct(`TOTAL FOKOINS: ${coins.toLocaleString()}`,CW/2,CH-36,'#ffd700',13);
+    ct(`TOTAL FOKOINS: ${coins.toLocaleString()}`,CW/2,CH-36,'#ffd700',8);
     ctx.shadowBlur=0;
-    ct('Any key or OK to return',CW/2,CH-14,'#999',11,false);
+    ct('Any key or OK to return',CW/2,CH-14,'#999',8,false);
 }
 
 function drawAchievements() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16; ct('ACHIEVEMENTS',CW/2,36,'#7fff7f',24); ctx.shadowBlur=0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16; ct('ACHIEVEMENTS',CW/2,36,'#7fff7f',10); ctx.shadowBlur=0;
     const cols=3, aw=188, ah=68, gx=4, gy=4;
     const ox=(CW-(cols*aw+(cols-1)*gx))/2;
     const oy=64;
@@ -1071,22 +1072,22 @@ function drawAchievements() {
         ctx.restore();
         // Name
         ctx.textAlign='left'; ctx.textBaseline='top';
-        ctx.font='bold 10px "Courier New"';
+        ctx.font='8px "Press Start 2P"';
         ctx.fillStyle=got?'#7fff7f':'#888888';
         ctx.fillText(a.name,x+26,y+10);
         // Desc
-        ctx.font='9px "Courier New"';
+        ctx.font='7px "Press Start 2P"';
         ctx.fillStyle=got?'#6aaa6a':'#777777';
-        ctx.fillText(a.desc,x+26,y+25);
+        ctx.fillText(a.desc,x+26,y+24);
         // Status
-        ctx.font='9px "Courier New"';
+        ctx.font='7px "Press Start 2P"';
         ctx.fillStyle=got?'#5a8a5a':'#666666';
-        ctx.fillText(got?'UNLOCKED':'???',x+26,y+40);
+        ctx.fillText(got?'UNLOCKED':'???',x+26,y+38);
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const total=ACHIEVEMENTS.filter(a=>achUnlocked[a.id]).length;
-    ct(`${total} / ${ACHIEVEMENTS.length} UNLOCKED`,CW/2,CH-26,'#6aaa6a',12,false);
-    ct('Any key or OK to return',CW/2,CH-10,'#999',11,false);
+    ct(`${total} / ${ACHIEVEMENTS.length} UNLOCKED`,CW/2,CH-26,'#6aaa6a',8,false);
+    ct('Any key or OK to return',CW/2,CH-10,'#999',8,false);
 }
 
 function drawAchPopups(now) {
@@ -1110,11 +1111,11 @@ function drawAchPopups(now) {
         ctx.fillStyle='#071407'; rr(px,py,pw,ph,5); ctx.fill();
         ctx.strokeStyle='#4aaa4a'; ctx.lineWidth=1.5; rr(px,py,pw,ph,5); ctx.stroke();
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=6;
-        ctx.fillStyle='#7fff7f'; ctx.font='bold 8px "Courier New"';
+        ctx.fillStyle='#7fff7f'; ctx.font='7px "Press Start 2P"';
         ctx.textAlign='left'; ctx.textBaseline='top';
         ctx.fillText('ACHIEVEMENT!',px+28,py+7);
         ctx.shadowBlur=0;
-        ctx.fillStyle='#aaffaa'; ctx.font='bold 10px "Courier New"';
+        ctx.fillStyle='#aaffaa'; ctx.font='7px "Press Start 2P"';
         ctx.fillText(a.name,px+28,py+20);
         drawPixelIcon(px+5,py+ph/2-8,a.icon,1.5);
         ctx.restore();
@@ -1124,7 +1125,7 @@ function drawAchPopups(now) {
 
 function drawShop() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=20; ct('SHOP',CW/2,28,'#ffd700',26); ctx.shadowBlur=0;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=20; ct('SHOP',CW/2,28,'#ffd700',11); ctx.shadowBlur=0;
     const coins=getFOKoins(), si=cfg.shopItems||{};
     const startY=56, rowH=58;
     SHOP_ITEMS.forEach((item,i)=>{
@@ -1134,27 +1135,27 @@ function drawShop() {
         if(sel){ctx.strokeStyle='#6aaa6a';ctx.lineWidth=1.5;rr(8,y,CW-16,rowH-4,5);ctx.stroke();}
         drawPixelIcon(16,y+(rowH-4)/2-8,item.icon,2);
         ctx.textAlign='left'; ctx.textBaseline='top';
-        ctx.font='bold 11px "Courier New"';
+        ctx.font='8px "Press Start 2P"';
         ctx.fillStyle=owned?'#7fff7f':sel?'#dddddd':'#aaaaaa';
-        ctx.fillText(item.name,46,y+8);
-        ctx.font='9px "Courier New"'; ctx.fillStyle='#999999';
-        ctx.fillText(item.desc,46,y+24);
+        ctx.fillText(item.name,46,y+10);
+        ctx.font='7px "Press Start 2P"'; ctx.fillStyle='#999999';
+        ctx.fillText(item.desc,46,y+26);
         ctx.textAlign='right';
         if(owned){
-            ctx.font='bold 10px "Courier New"'; ctx.fillStyle='#4a8a4a';
-            ctx.fillText('OWNED',CW-18,y+12);
+            ctx.font='8px "Press Start 2P"'; ctx.fillStyle='#4a8a4a';
+            ctx.fillText('OWNED',CW-18,y+14);
         } else {
-            ctx.font='bold 10px "Courier New"'; ctx.fillStyle=canAfford?'#ffd700':'#553322';
-            ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+12);
-            if(sel){ctx.font='9px "Courier New"';ctx.fillStyle=canAfford?'#5aaa5a':'#cc6644';
-                ctx.fillText(canAfford?'ENTER to buy':'Not enough FK',CW-18,y+28);}
+            ctx.font='8px "Press Start 2P"'; ctx.fillStyle=canAfford?'#ffd700':'#553322';
+            ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+14);
+            if(sel){ctx.font='7px "Press Start 2P"';ctx.fillStyle=canAfford?'#5aaa5a':'#cc6644';
+                ctx.fillText(canAfford?'ENTER to buy':'Not enough FK',CW-18,y+30);}
         }
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor='#ffd700'; ctx.shadowBlur=2;
-    ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',11);
+    ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',8);
     ctx.shadowBlur=0;
-    ct('UP/DOWN navigate  |  ESC back',CW/2,CH-12,'#888',11,false);
+    ct('UP/DOWN navigate  |  ESC back',CW/2,CH-12,'#888',8,false);
     // Purchase particles
     const now=performance.now();
     purchaseParticles=purchaseParticles.filter(p=>{
@@ -1187,24 +1188,24 @@ function drawCredits() {
             switch (type) {
                 case 'title':
                     ctx.shadowColor='#7fff7f'; ctx.shadowBlur=22;
-                    ct(val, CW/2, y+20, '#7fff7f', 34); ctx.shadowBlur=0; break;
+                    ct(val, CW/2, y+12, '#7fff7f', 11); ctx.shadowBlur=0; break;
                 case 'sub':
-                    ct(val, CW/2, y+10, '#5a8a5a', 13, false); break;
+                    ct(val, CW/2, y+7, '#5a8a5a', 8, false); break;
                 case 'hdr':
                     ctx.shadowColor='#00cccc'; ctx.shadowBlur=6;
-                    ct(val, CW/2, y+12, '#00cccc', 13); ctx.shadowBlur=0; break;
+                    ct(val, CW/2, y+9, '#00cccc', 8); ctx.shadowBlur=0; break;
                 case 'txt':
-                    ct(val, CW/2, y+10, '#aaa', 14, false); break;
+                    ct(val, CW/2, y+7, '#aaa', 8, false); break;
                 case 'sml':
-                    ct(val, CW/2, y+8, '#999', 12, false); break;
+                    ct(val, CW/2, y+6, '#999', 8, false); break;
                 case 'coins':
                     ctx.shadowColor='#ffd700'; ctx.shadowBlur=3;
-                    ct(`YOUR FOKOINS: ${getFOKoins().toLocaleString()}`, CW/2, y+14, '#ffd700', 16);
+                    ct(`YOUR FOKOINS: ${getFOKoins().toLocaleString()}`, CW/2, y+9, '#ffd700', 8);
                     ctx.shadowBlur=0; break;
                 case 'secret':
                     ctx.shadowColor='#ff4444'; ctx.shadowBlur=14;
-                    ctx.font='italic bold 16px "Courier New"'; ctx.textAlign='center'; ctx.textBaseline='middle';
-                    ctx.fillStyle='#ff5555'; ctx.fillText(val, CW/2, y+14);
+                    ctx.font='8px "Press Start 2P"'; ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillStyle='#ff5555'; ctx.fillText(val, CW/2, y+9);
                     ctx.shadowBlur=0; break;
             }
         }
@@ -1213,7 +1214,7 @@ function drawCredits() {
     ctx.restore();
     creditsScroll -= 0.8;
     if (creditsScroll < -(credTotalH())) creditsScroll = CH + 40;  // loop
-    ct('OK / ENTER to exit', CW/2, CH-12, '#6a9a6a', 11, false);
+    ct('OK / ENTER to exit', CW/2, CH-12, '#6a9a6a', 8, false);
 }
 
 function drawNameEntry(now) {
@@ -1224,30 +1225,30 @@ function drawNameEntry(now) {
     drawOvBg(0.84);
     const isWin=nameReason==='win';
     ctx.shadowColor=isWin?'#ffd700':'#ff5555'; ctx.shadowBlur=22;
-    ct(isWin?'YOU WIN!':'GAME OVER',CW/2,60,isWin?'#ffd700':'#ff5555',34); ctx.shadowBlur=0;
-    ct(`SCORE: ${score}   LEVEL: ${level}`,CW/2,100,'#aaa',13,false);
-    ct('ENTER YOUR NAME:',CW/2,128,'#7fff7f',13,false);
+    ct(isWin?'YOU WIN!':'GAME OVER',CW/2,60,isWin?'#ffd700':'#ff5555',13); ctx.shadowBlur=0;
+    ct(`SCORE: ${score}   LEVEL: ${level}`,CW/2,100,'#aaa',8,false);
+    ct('ENTER YOUR NAME:',CW/2,128,'#7fff7f',8,false);
     const sw=30,sh=40,gap=5,totalW=MAX_NAME*(sw+gap)-gap,sx0=Math.floor(CW/2-totalW/2),sy=146;
     for(let i=0;i<MAX_NAME;i++){
         const sx=sx0+i*(sw+gap),act=i===nameStr.length&&nameStr.length<MAX_NAME,has=i<nameStr.length;
         ctx.fillStyle=act?'#142014':'#0d0d18'; ctx.strokeStyle=act?'#7fff7f':'#2a2a3a'; ctx.lineWidth=act?1.5:1;
         rr(sx,sy,sw,sh,3); ctx.fill(); ctx.stroke();
-        if(has){ ct(nameStr[i],sx+sw/2,sy+sh/2,'#7fff7f',22); }
+        if(has){ ct(nameStr[i],sx+sw/2,sy+sh/2,'#7fff7f',10); }
         else if(act){
-            ctx.globalAlpha=0.42; ct(NAME_CHARS[nameCharIdx]===' '?'_':NAME_CHARS[nameCharIdx],sx+sw/2,sy+sh/2,'#7fff7f',20); ctx.globalAlpha=1;
+            ctx.globalAlpha=0.42; ct(NAME_CHARS[nameCharIdx]===' '?'_':NAME_CHARS[nameCharIdx],sx+sw/2,sy+sh/2,'#7fff7f',10); ctx.globalAlpha=1;
             if(Math.floor(now/400)%2===0){ctx.fillStyle='#7fff7f55';ctx.fillRect(sx+5,sy+sh-6,sw-10,2);}
         }
     }
     const cy2=sy+sh+20,ci=nameCharIdx,disp=c=>c===' '?'_':c;
     if(nameStr.length<MAX_NAME){
-        ct('(^)',CW/2,cy2,'#888',12,false);
-        ct(disp(NAME_CHARS[(ci-1+NAME_CHARS.length)%NAME_CHARS.length]),CW/2,cy2+16,'#999',14,false);
+        ct('(^)',CW/2,cy2,'#888',8,false);
+        ct(disp(NAME_CHARS[(ci-1+NAME_CHARS.length)%NAME_CHARS.length]),CW/2,cy2+14,'#999',8,false);
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=10;
-        ct(disp(NAME_CHARS[ci]),CW/2,cy2+32,'#7fff7f',22); ctx.shadowBlur=0;
-        ct(disp(NAME_CHARS[(ci+1)%NAME_CHARS.length]),CW/2,cy2+48,'#999',14,false);
-        ct('(v)',CW/2,cy2+62,'#888',12,false);
+        ct(disp(NAME_CHARS[ci]),CW/2,cy2+26,'#7fff7f',10); ctx.shadowBlur=0;
+        ct(disp(NAME_CHARS[(ci+1)%NAME_CHARS.length]),CW/2,cy2+38,'#999',8,false);
+        ct('(v)',CW/2,cy2+50,'#888',8,false);
     }
-    ct('TAP SCREEN to open keyboard  |  UP/DOWN + RIGHT to type  |  ENTER to confirm',CW/2,CH-10,'#999',11,false);
+    ct('TAP to type  |  UP/DOWN+RIGHT  |  ENTER',CW/2,CH-10,'#999',8,false);
 }
 
 function drawGameBoard(now) {
@@ -1275,31 +1276,31 @@ function drawGameBoard(now) {
     if(phase==='levelDone'){
         const a=Math.min(1,(now-phaseAt)/150);
         ctx.save(); ctx.globalAlpha=a; ctx.shadowColor='#7fff7f'; ctx.shadowBlur=30;
-        ct('LEVEL COMPLETE!',CW/2,levelWasPerfect?CH/2-36:CH/2-18,'#7fff7f',30); ctx.restore();
+        ct('LEVEL COMPLETE!',CW/2,levelWasPerfect?CH/2-36:CH/2-18,'#7fff7f',11); ctx.restore();
         if(levelWasPerfect){
             const pa=Math.min(1,(now-phaseAt-180)/200);
             if(pa>0){
                 ctx.save(); ctx.globalAlpha=pa;
                 ctx.shadowColor='#ffd700'; ctx.shadowBlur=22;
-                ct('PERFECT LEVEL!',CW/2,CH/2+2,'#ffd700',22);
+                ct('PERFECT LEVEL!',CW/2,CH/2+2,'#ffd700',9);
                 ctx.shadowBlur=0;
-                ct(`+${(level*1000).toLocaleString()} BONUS`,CW/2,CH/2+28,'#ffaa00',15,false);
+                ct(`+${(level*1000).toLocaleString()} BONUS`,CW/2,CH/2+22,'#ffaa00',8,false);
                 ctx.restore();
             }
         }
         if(levelDoneWaiting&&Math.floor(now/520)%2===0)
-            ct('TAP OR PRESS ANY KEY',CW/2,CH/2+(levelWasPerfect?58:22),'#6aaa6a',14,false);
+            ct('TAP OR PRESS ANY KEY',CW/2,CH/2+(levelWasPerfect?50:22),'#6aaa6a',8,false);
     }
     if(dying){
         const t=(now-phaseAt)/DEATH_DUR;
         ctx.save(); ctx.globalAlpha=Math.min(1,t*2.5); ctx.shadowColor='#ff4444'; ctx.shadowBlur=20;
-        ct(deathMsg,CW/2,CH/2,'#ff5555',24); ctx.restore();
+        ct(deathMsg,CW/2,CH/2,'#ff5555',10); ctx.restore();
     }
     if(phase==='paused'){
         drawOvBg(0.55);
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=24;
-        ct('PAUSED',CW/2,CH/2-16,'#7fff7f',36); ctx.shadowBlur=0;
-        ctx.save(); ctx.font='13px "Courier New"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
+        ct('PAUSED',CW/2,CH/2-16,'#7fff7f',15); ctx.shadowBlur=0;
+        ctx.save(); ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
         ctx.fillStyle='#4a7a4a'; ctx.fillText('SPACE / PSE to resume   ESC to quit menu',CW/2,CH-8); ctx.restore();
     }
     // Bonus flash (duration and colour vary by tier)
@@ -1309,7 +1310,7 @@ function drawGameBoard(now) {
         const a=1-bonusAge/flashDur;
         const isEpic=bonusLabel.startsWith('EPIC'),isLucky=bonusLabel.startsWith('LUCKY');
         const col=isEpic?`hsl(${(now/6)%360},100%,70%)`:isLucky?'#ffd700':'#ffd700';
-        const sz=isEpic?34:28;
+        const sz=isEpic?13:11;
         ctx.save(); ctx.globalAlpha=a;
         ctx.shadowColor=col; ctx.shadowBlur=isEpic?40:30;
         ct(bonusLabel,CW/2,CH/2-60,col,sz);
@@ -1325,16 +1326,16 @@ function drawQuitConfirm() {
     if(snake) drawSnake(false);
     drawOvBg(0.72);
     ctx.shadowColor='#ff9900'; ctx.shadowBlur=18;
-    ct('QUIT TO MENU?',CW/2,CH/2-46,'#ff9900',28); ctx.shadowBlur=0;
+    ct('QUIT TO MENU?',CW/2,CH/2-46,'#ff9900',11); ctx.shadowBlur=0;
     const YES_X=CW/2-80, NO_X=CW/2+80;
     ctx.globalAlpha=quitConfirmSel===0?1:0.35;
     ctx.shadowColor='#7fff7f'; ctx.shadowBlur=quitConfirmSel===0?14:0;
-    ct(quitConfirmSel===0?'> YES <':'  YES  ',YES_X,CH/2+10,'#7fff7f',22);
+    ct(quitConfirmSel===0?'> YES <':'  YES  ',YES_X,CH/2+10,'#7fff7f',9);
     ctx.globalAlpha=quitConfirmSel===1?1:0.35;
     ctx.shadowColor='#ff5555'; ctx.shadowBlur=quitConfirmSel===1?14:0;
-    ct(quitConfirmSel===1?'> NO <':'  NO   ',NO_X,CH/2+10,'#ff5555',22);
+    ct(quitConfirmSel===1?'> NO <':'  NO   ',NO_X,CH/2+10,'#ff5555',9);
     ctx.globalAlpha=1; ctx.shadowBlur=0;
-    ctx.save(); ctx.font='13px "Courier New"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
+    ctx.save(); ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
     ctx.fillStyle='#4a7a4a'; ctx.fillText('LEFT/RIGHT to choose   ENTER confirm   ESC cancel',CW/2,CH-8); ctx.restore();
     showHUD(false);
 }
