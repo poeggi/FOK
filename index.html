@@ -918,7 +918,7 @@ function drawMenu() {
     // FOKoins pinned to lower-right corner
     const coins=getFOKoins();
     ctx.save();
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=2;
     ctx.fillStyle='#ffd700';
     ctx.font='bold 12px "Courier New"';
     ctx.textAlign='right'; ctx.textBaseline='bottom';
@@ -989,7 +989,7 @@ function drawScores() {
         ctx.textAlign='center';
     }
     const coins=getFOKoins();
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=8;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=3;
     ct(`TOTAL FOKOINS: ${coins.toLocaleString()}`,CW/2,CH-36,'#ffd700',13);
     ctx.shadowBlur=0;
     ct('Any key or OK to return',CW/2,CH-14,'#999',11,false);
@@ -1098,7 +1098,7 @@ function drawShop() {
         }
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=2;
     ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',11);
     ctx.shadowBlur=0;
     ct('UP/DOWN navigate  |  ESC back',CW/2,CH-12,'#888',11,false);
@@ -1145,7 +1145,7 @@ function drawCredits() {
                 case 'sml':
                     ct(val, CW/2, y+8, '#999', 12, false); break;
                 case 'coins':
-                    ctx.shadowColor='#ffd700'; ctx.shadowBlur=10;
+                    ctx.shadowColor='#ffd700'; ctx.shadowBlur=3;
                     ct(`YOUR FOKOINS: ${getFOKoins().toLocaleString()}`, CW/2, y+14, '#ffd700', 16);
                     ctx.shadowBlur=0; break;
                 case 'secret':
