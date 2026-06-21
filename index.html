@@ -973,8 +973,11 @@ function drawSettings() {
     items.forEach((item,i)=>menuItem(item,96+i*46,i===settingsSel));
     // Small snake preview for color setting
     if(settingsSel===3){
-        const py=96+3*46, px=CW/2+116;
+        const py=96+3*46;
         ctx.save();
+        ctx.font='13px "Press Start 2P"';
+        const tw=ctx.measureText('> SNAKE COLOR: '+sc.name+' <').width;
+        const px=Math.round(CW/2+tw/2+12);
         for(let k=0;k<5;k++){
             const frac=1-k/5, l=Math.round(10+frac*40);
             ctx.fillStyle=k===0?sc.head:`hsl(${sc.h},65%,${l}%)`;
@@ -1130,9 +1133,9 @@ function drawShop() {
     const startY=56, rowH=58;
     SHOP_ITEMS.forEach((item,i)=>{
         const y=startY+i*rowH, sel=i===shopSel, owned=!!si[item.id], canAfford=coins>=item.price;
-        ctx.fillStyle=sel?'rgba(40,64,40,0.55)':'rgba(10,10,10,0.3)';
+        ctx.fillStyle=owned?(sel?'rgba(40,64,40,0.7)':'rgba(20,48,20,0.5)'):(sel?'rgba(40,64,40,0.55)':'rgba(10,10,10,0.3)');
         rr(8,y,CW-16,rowH-4,5); ctx.fill();
-        if(sel){ctx.strokeStyle='#6aaa6a';ctx.lineWidth=1.5;rr(8,y,CW-16,rowH-4,5);ctx.stroke();}
+        if(owned||sel){ctx.strokeStyle=owned?'#7fff7f':'#6aaa6a';ctx.lineWidth=1.5;rr(8,y,CW-16,rowH-4,5);ctx.stroke();}
         drawPixelIcon(16,y+(rowH-4)/2-8,item.icon,2);
         ctx.textAlign='left'; ctx.textBaseline='top';
         ctx.font='8px "Press Start 2P"';
