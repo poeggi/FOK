@@ -20,7 +20,7 @@
             user-select: none; overflow: hidden;
         }
         #hud {
-            display: flex; flex-direction: column; gap: 3px;
+            display: flex; flex-direction: column; gap: 3px; font-size: 13px;
             width: min(600px, calc(100vw - 16px));
             font-size: 15px; letter-spacing: 1.2px;
             opacity: 1; transition: opacity 0.15s;
@@ -32,11 +32,11 @@
             width: min(600px, calc(100vw - 16px));
             display: flex; justify-content: space-between; align-items: center; padding: 0 2px;
         }
-        #fps-el { font: 12px 'Courier New',monospace; color: #7aaa7a; letter-spacing: 1px; }
+        #fps-el { font: 13px 'Courier New',monospace; color: #7aaa7a; letter-spacing: 1px; }
         #btn-mute {
             width: 38px; height: 24px;
             background: #0d180d; border: 1px solid #3a5a3a;
-            color: #7fff7f; font: bold 11px 'Courier New',monospace;
+            color: #7fff7f; font: bold 13px 'Courier New',monospace;
             cursor: pointer; border-radius: 3px; padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
@@ -82,7 +82,8 @@
                 padding: 16px 0;
             }
             #topbar { width: auto; padding: 0; gap: 8px; }
-            #fps-el { position: absolute; bottom: 16px; left: 0; }
+            #fps-el { position: absolute; bottom: 16px; left: 0; font-size: 11px; }
+            #btn-mute { font-size: 11px; }
             #hud { width: auto; flex-direction: column; gap: 6px; font-size: 11px; letter-spacing: 0.5px; }
             .hud-row { flex-direction: column; gap: 3px; }
             #wrap {
@@ -1298,7 +1299,8 @@ function drawGameBoard(now) {
         drawOvBg(0.55);
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=24;
         ct('PAUSED',CW/2,CH/2-16,'#7fff7f',36); ctx.shadowBlur=0;
-        ct('SPACE / | | to resume   ESC to quit menu',CW/2,CH/2+22,'#556655',12,false);
+        ctx.save(); ctx.font='13px "Courier New"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
+        ctx.fillStyle='#4a7a4a'; ctx.fillText('SPACE / PSE to resume   ESC to quit menu',CW/2,CH-8); ctx.restore();
     }
     // Bonus flash (duration and colour vary by tier)
     const bonusAge=now-bonusAt;
@@ -1332,7 +1334,8 @@ function drawQuitConfirm() {
     ctx.shadowColor='#ff5555'; ctx.shadowBlur=quitConfirmSel===1?14:0;
     ct(quitConfirmSel===1?'> NO <':'  NO   ',NO_X,CH/2+10,'#ff5555',22);
     ctx.globalAlpha=1; ctx.shadowBlur=0;
-    ct('LEFT/RIGHT to choose   ENTER to confirm   ESC to cancel',CW/2,CH/2+50,'#333',10,false);
+    ctx.save(); ctx.font='13px "Courier New"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
+    ctx.fillStyle='#4a7a4a'; ctx.fillText('LEFT/RIGHT to choose   ENTER confirm   ESC cancel',CW/2,CH-8); ctx.restore();
     showHUD(false);
 }
 
