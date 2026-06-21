@@ -559,6 +559,7 @@ function saveAch() { try { localStorage.setItem(ACH_KEY, JSON.stringify(achUnloc
 function unlockAch(id) {
     if(achUnlocked[id]) return;
     achUnlocked[id] = Date.now(); saveAch();
+    addFOKoins(1000);
     achPopups.push({ id, at: performance.now() });
     spawnConfetti();
 }
