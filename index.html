@@ -44,10 +44,10 @@
         #btn-mute.muted { color: #888; border-color: #444; }
         #wrap { width: min(600px, calc(100vw - 16px)); }
         canvas#c { display: block; width: 100%; height: auto; border: 1px solid #2a2a4e; touch-action: none; }
-        #gamepad { display: none; align-items: center; justify-content: center; gap: 14px; }
+        #gamepad { display: none; align-items: center; justify-content: center; gap: 26px; }
         @media (pointer: coarse) { #gamepad { display: flex; } }
         #dpad-c { width: min(120px, 33vw); height: min(120px, 33vw); touch-action: none; display: block; }
-        #left-btns, #side-btns { display: flex; flex-direction: column; gap: 10px; }
+        #left-btns, #side-btns { display: flex; flex-direction: column; gap: 14px; }
         .sbtn {
             width: 54px; height: 54px;
             background: #0d180d; border: 1px solid #3a5a3a; color: #7fff7f;
@@ -63,7 +63,7 @@
             }
             #side-info {
                 display: flex; flex-direction: column; justify-content: center;
-                align-items: flex-start; gap: 14px; width: 118px; flex-shrink: 0;
+                align-items: flex-start; gap: 14px; width: 130px; flex-shrink: 0;
             }
             #topbar { width: auto; padding: 0; gap: 8px; }
             #hud { width: auto; flex-direction: column; gap: 6px; font-size: 12px; letter-spacing: 0.8px; }
@@ -72,14 +72,17 @@
                 flex: 1; min-width: 0; width: auto;
                 display: flex; align-items: center; justify-content: center;
             }
-            canvas#c { width: auto; height: calc(100dvh - 12px); max-width: 100%; border: none; }
-            #gamepad {
-                width: 118px; flex-shrink: 0; flex-direction: column;
-                align-items: center; justify-content: center; gap: 8px;
+            canvas#c {
+                width: min(calc((100dvh - 12px) * 1.5), 100%);
+                height: auto;
             }
-            #dpad-c { width: 88px; height: 88px; }
-            .sbtn { width: 44px; height: 44px; font-size: 11px; }
-            #left-btns, #side-btns { gap: 8px; }
+            #gamepad {
+                width: 130px; flex-shrink: 0; flex-direction: column;
+                align-items: center; justify-content: center; gap: 18px;
+            }
+            #dpad-c { width: min(120px, 28vw); height: min(120px, 28vw); }
+            .sbtn { width: 46px; height: 46px; font-size: 11px; }
+            #left-btns, #side-btns { gap: 12px; }
         }
         #name-inp {
             position: fixed; left: -9999px; top: 50%; width: 1px; height: 1px; opacity: 0;
