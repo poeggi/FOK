@@ -1532,8 +1532,8 @@ const GDIRS={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRi
 function handleKey(key, pde) {
     Snd.resume();
 
-    // Global: mute
-    if(key==='m'||key==='M'){ toggleMute(); return; }
+    // Global: mute (suppressed during name entry so M is typeable)
+    if((key==='m'||key==='M')&&phase!=='nameEntry'){ toggleMute(); return; }
 
     // Space = pause toggle (playing/paused only)
     if(key===' '){
