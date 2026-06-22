@@ -1621,14 +1621,14 @@ function handleKey(key, pde) {
                 saveCfg(); Snd.sfx('nav',cfg.music);
             } else if(settingsSel===6){
                 cfg.handed=r?1:0; applyHandedness(); saveCfg(); Snd.sfx('nav',cfg.music);
-            } else if(!r){ phase='menu'; Snd.sfx('nav',cfg.music); }
+            }
         }
         if(pde)pde();
     }
     else if(phase==='credits'){
         if(key==='ArrowDown'){creditsSpeed=3.2;if(pde)pde();}
         else if(key==='ArrowUp'){creditsSpeed=0.4;if(pde)pde();}
-        else{phase='menu';creditsSpeed=0.8;if(pde)pde();}
+        else if(key==='Enter'){phase='menu';creditsSpeed=0.8;if(pde)pde();}
     }
     else if(phase==='scores'){ phase='menu'; if(pde)pde(); }
     else if(phase==='achievements'){
