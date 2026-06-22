@@ -150,7 +150,7 @@ const ctx = canvas.getContext('2d');
 // ================================================================
 const Snd = (() => {
     let ac = null, mGain, sGain, _vol = 1, _sfxVol = 0.5, _justInited = false;
-    let chState = [], curTrack = null, isPaused = false, _bgSuspended = false, _resuming = false, _resumingTimer = 0;
+    let chState = [], curTrack = null, isPaused = false, _bgSuspended = false;
 
     const SEQ = {
         // NEW style (3-channel)
@@ -330,20 +330,15 @@ const Snd = (() => {
 
     function resume() {
         if (!ac) { init(); }
-        if (ac && ac.state === 'suspended' && !_resuming) {
-            _resuming = true;
-            // Safety valve: if the Promise never settles (iOS silent-hang), unblock after 400ms
-            // so the next user gesture can retry via tryResume().
-            _resumingTimer = setTimeout(() => { _resuming = false; }, 400);
+        if (ac && ac.state === 'suspended') {
+            // Multiple concurrent calls are safe (spec-idempotent). No guard needed —
+            // iOS cold-start silently hangs the first call; every subsequent gesture
+            // retries freely until one succeeds.
             ac.resume().then(() => {
-                clearTimeout(_resumingTimer); _resuming = false;
                 const wasBg = _bgSuspended;
                 _bgSuspended = false;
                 if (curTrack && SEQ[curTrack]) {
                     if (wasBg) {
-                        // Background resume: mute for 0.45s so the up-to-0.4s lookahead
-                        // notes that were pre-scheduled before suspension expire silently,
-                        // then start fresh from that point.
                         const flush = 0.45;
                         chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + flush }));
                         if (!isPaused) {
@@ -352,8 +347,6 @@ const Snd = (() => {
                             mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime + flush, 0.05);
                         }
                     } else {
-                        // Initial iOS unlock: tick() was blocked while suspended so no stale
-                        // notes; just reset position and restore gain immediately.
                         chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + 0.05 }));
                         if (!isPaused) {
                             mGain.gain.cancelScheduledValues(ac.currentTime);
@@ -364,9 +357,8 @@ const Snd = (() => {
                     mGain.gain.cancelScheduledValues(ac.currentTime);
                     mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime, 0.08);
                 }
-            }).catch(() => { clearTimeout(_resumingTimer); _resuming = false; });
+            }).catch(() => {});
         } else if (_bgSuspended) {
-            // AC wasn't auto-suspended by browser but we silenced the gain; restore it.
             _bgSuspended = false;
             if (!isPaused && curTrack) {
                 mGain.gain.cancelScheduledValues(ac.currentTime);
@@ -428,7 +420,6 @@ const Snd = (() => {
     function tryResume() {
         if (!ac || ac.state !== 'suspended') return;
         ac.resume().then(() => {
-            _resuming = false; clearTimeout(_resumingTimer);
             const wasBg = _bgSuspended;
             _bgSuspended = false;
             if (curTrack && SEQ[curTrack]) {
