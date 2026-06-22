@@ -51,6 +51,8 @@
         canvas#c { display: block; width: 100%; height: auto; border: 1px solid #2a2a4e; touch-action: none; }
         #gamepad { display: none; align-items: center; justify-content: center; gap: 26px; }
         @media (pointer: coarse) { #gamepad { display: flex; } }
+        #gamepad.splash { opacity: 0.2; }
+        #gamepad.splash, #gamepad.splash * { pointer-events: none; }
         #dpad-c { width: min(120px, 33vw); height: min(120px, 33vw); touch-action: none; display: block; }
         #left-btns, #side-btns { display: flex; flex-direction: column; gap: 14px; }
         .sbtn {
@@ -1726,6 +1728,7 @@ function leaveSplash(fromTouch = false) {
     document.getElementById('btn-mute').style.visibility = '';
     document.getElementById('fps-el').style.visibility = '';
     document.getElementById('btn-esc').style.visibility = '';
+    document.getElementById('gamepad').classList.remove('splash');
 }
 
 function handleKey(key, pde) {
@@ -1973,6 +1976,7 @@ document.getElementById('btn-ok').addEventListener('click',()=>handleKey('Enter'
 document.getElementById('btn-pause').addEventListener('touchstart',e=>{e.preventDefault();handleKey(' ',null);},{passive:false});
 document.getElementById('btn-pause').addEventListener('click',()=>handleKey(' ',null));
 document.getElementById('btn-esc').style.visibility='hidden';
+document.getElementById('gamepad').classList.add('splash');
 document.getElementById('btn-esc').addEventListener('touchstart',e=>{e.preventDefault();handleKey('Escape',null);},{passive:false});
 document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escape',null));
 
