@@ -2021,15 +2021,20 @@ requestAnimationFrame(syncFontScale);
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
+        // Snapshot whether a SW was already in control when this page loaded.
+        // On a fresh install, controller is null; controllerchange fires when
+        // skipWaiting+clients.claim() take over — but that's a first-install
+        // transition, not a real update. Reloading here causes iOS Safari to
+        // mark the tab as programmatically reloaded, which locks the Web Audio
+        // API gesture gate for the entire session (audio only works after F5).
+        const wasControlled = !!navigator.serviceWorker.controller;
         navigator.serviceWorker.register('./sw.js').then(reg => {
-            // On startup: bypass HTTP cache and check for a new SW immediately.
-            // If one is found it installs, skipWaiting activates it, controllerchange fires, we reload.
             if (navigator.onLine) reg.update().catch(() => {});
         });
-        // When a new SW takes control, reload once so the fresh code actually runs.
+        // Only reload when an actual SW update replaces a previously active SW.
         let _reloading = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (_reloading) return;
+            if (_reloading || !wasControlled) return;
             _reloading = true;
             window.location.reload();
         });
