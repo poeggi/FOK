@@ -369,11 +369,9 @@ const Snd = (() => {
         if (ac) return;
         try {
             ac = new (window.AudioContext || window.webkitAudioContext)();
-            console.log('[Snd] AC created, state:', ac.state);
-            ac.addEventListener('statechange', () => console.log('[Snd] AC statechange ->', ac.state));
             mGain = ac.createGain(); mGain.gain.value = 0.32 * _vol; mGain.connect(ac.destination);
             sGain = ac.createGain(); sGain.gain.value = 0.58 * _sfxVol; sGain.connect(ac.destination);
-        } catch(e) { ac = null; console.log('[Snd] AC creation failed:', e); }
+        } catch(e) { ac = null; }
     }
 
     function tone(freq, when, dur, type, vol, detune, dest) {
@@ -405,10 +403,8 @@ const Snd = (() => {
         else if (ch.fn === 'stab')   tone(freq, when, dur, 'sawtooth', ch.vol, 0);
     }
 
-    let _dbgTickLogged = false;
     function tick(musicOn) {
         if (!ac || !curTrack || !musicOn || isPaused) return;
-        if (!_dbgTickLogged) { console.log('[Snd] tick() scheduling notes, ac.state:', ac.state, 'curTrack:', curTrack); _dbgTickLogged = true; }
         const seq = SEQ[curTrack], spb = 60 / seq.bpm;
         seq.channels.forEach((ch, ci) => {
             const st = chState[ci];
@@ -423,9 +419,7 @@ const Snd = (() => {
 
     function play(t) {
         if (!ac || curTrack === t) return;
-        console.log('[Snd] play('+t+'), ac.state:', ac.state, 'was:', curTrack);
         curTrack = t; isPaused = false;
-        _dbgTickLogged = false;
         chState = SEQ[t].channels.map(() => ({ pos: 0, nextNote: ac.currentTime }));
         mGain.gain.cancelScheduledValues(ac.currentTime);
         mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime, 0.08);
@@ -452,13 +446,10 @@ const Snd = (() => {
         mGain.gain.setTargetAtTime(0.32 * _vol, now, 0.10);
     }
 
-    function resume(label) {
+    function resume() {
         if (!ac) { init(); }
-        console.log('[Snd] resume('+label+'), ac.state:', ac ? ac.state : 'no AC');
         if (ac && ac.state === 'suspended') {
-            console.log('[Snd] calling ac.resume() from:', label);
             ac.resume().then(() => {
-                console.log('[Snd] ac.resume() resolved, state now:', ac.state, 'curTrack:', curTrack);
                 if (curTrack && SEQ[curTrack]) {
                     chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + 0.05 }));
                     mGain.gain.cancelScheduledValues(ac.currentTime);
@@ -511,39 +502,8 @@ const Snd = (() => {
     return { init, tick, play, stop, pauseMusic, resumeMusic, resume, sfx, setVol, setSfxVol };
 })();
 
-// TODO: Audio initialization is broken across platforms -- do not remove until confirmed fixed.
-//
-// Observed symptoms (as of 2026-06-22):
-//   - iOS Safari / iOS PWA: music starts only after the SECOND keypress, never after the first.
-//   - Firefox Windows: music never starts on any keypress (up/down arrows etc.); only starts
-//     when entering a sub-menu (phase change) or toggling mute/unmute in the main menu.
-//   - Both platforms: audible pop/click artifact when first sound plays (SFX or music onset).
-//
-// Root cause is not fully understood. The Web Audio autoplay policy requires a user gesture
-// before AudioContext.resume() takes effect, but the current resume()/onFirst path does not
-// reliably unlock the AC on the first gesture across all browsers. The pop likely originates
-// from AC initialization or the first oscillator start on a fresh context despite the 10ms
-// attack ramp added to tone().
-//
-// Approaches to investigate:
-//   - iOS 2nd-press: pointerdown may fire before keydown; the first gesture may create AC but
-//     not resume it; the second gesture actually resumes. Try calling ac.resume() inside a
-//     dedicated touchstart/pointerdown handler that is registered before any game handlers.
-//   - Firefox: resume() may be called outside a trusted user-gesture stack frame by the time
-//     it reaches ac.resume(); check whether the call is synchronous in the event handler.
-//   - Pop: try playing a 1ms silent oscillator at gain 0 immediately after AC creation to
-//     prime the audio pipeline before any real sound is scheduled.
-
-// First interaction creates the AudioContext so menu music starts immediately
-(function() {
-    function onFirst(e) {
-        Snd.resume('onFirst:'+e.type);
-        document.removeEventListener('keydown', onFirst);
-        document.removeEventListener('pointerdown', onFirst);
-    }
-    document.addEventListener('keydown', onFirst, { once: true });
-    document.addEventListener('pointerdown', onFirst, { once: true });
-})();
+// Audio is initialized from the splash screen interaction, which guarantees a clean
+// user gesture context across all browsers (Firefox, iOS Safari, Chrome, etc.).
 
 // ================================================================
 // PERSISTENCE
@@ -647,8 +607,8 @@ function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (C
 // ================================================================
 // APP STATE
 // ================================================================
-// phases: menu|settings|scores|credits|playing|levelReady|paused|dying|levelDone|nameEntry|quitConfirm
-let phase = 'menu';
+// phases: splash|menu|settings|scores|credits|playing|levelReady|paused|dying|levelDone|nameEntry|quitConfirm
+let phase = 'splash';
 let menuSel = 0, settingsSel = 0, shopSel = 0, quitConfirmSel = 1, prevPhase = 'playing';
 const MENU_ITEMS     = ['PLAY', 'SETTINGS', 'HIGH SCORES', 'ACHIEVEMENTS', 'SHOP', 'CREDITS'];
 const SETTINGS_ITEMS = ['MUSIC', 'MUSIC STYLE', 'VOLUME', 'SFX VOLUME', 'TURBO', 'DIFFICULTY', 'SNAKE COLOR', 'LAYOUT', 'TOUCH SELECT', 'BACK'];
@@ -663,7 +623,7 @@ applyHandedness();
 let level, lives, score;
 let snake, dir, dirQueue;
 let gem, gemsDone, bars;
-let speed, stepAt, phaseAt, gemAt, deathMsg, pauseAt;
+let speed, stepAt, phaseAt = performance.now(), gemAt, deathMsg, pauseAt;
 let spawnAt = 0, levelDoneWaiting = false;
 let pauseReadyAt = 0, escReadyAt = 0;
 let perfectLevel = true, levelWasPerfect = false, fireworks = [];
@@ -1098,6 +1058,77 @@ function drawSnake(flash) {
 // ================================================================
 // SCREENS
 // ================================================================
+function drawSplash(now) {
+    const elapsed = (now - phaseAt) / 1000;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, CW, CH);
+    for (let y = 0; y < CH; y += 3) { ctx.fillStyle = 'rgba(0,255,0,0.025)'; ctx.fillRect(0, y, CW, 1); }
+
+    // Title
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '20px "Press Start 2P"';
+    ctx.shadowColor = '#33ff33'; ctx.shadowBlur = 22;
+    ctx.fillStyle = '#33ff33';
+    ctx.fillText('FOK SNAKE', CW/2, 58);
+    ctx.shadowBlur = 0;
+
+    // Coin drop animation (2.4s cycle)
+    const cycle = 2.4, t = elapsed % cycle;
+    const coinX = CW/2, slotY = 272, startY = 128;
+    const spinAngle = elapsed * 3 * Math.PI * 2;
+    const rX = Math.max(2, Math.abs(Math.cos(spinAngle)) * 18), rY = 18;
+
+    let coinY = startY, showCoin = true;
+    if (t < 1.0) {
+        const p = t / 1.0; coinY = startY + (slotY - startY - rY) * p * p;
+    } else if (t < 1.25) {
+        coinY = slotY - rY + rY * ((t - 1.0) / 0.25); // enters slot
+    } else {
+        showCoin = false;
+    }
+
+    // Slot housing
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(coinX - 28, slotY - 8, 56, 16);
+    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(coinX - 24, slotY - 5, 48, 10);
+    ctx.fillStyle = '#000';    ctx.fillRect(coinX - 10, slotY - 4, 20, 8);
+
+    if (showCoin) {
+        ctx.save();
+        if (t >= 1.0) { ctx.beginPath(); ctx.rect(0, 0, CW, slotY); ctx.clip(); }
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(coinX+2, coinY+3, rX, rY*0.35, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath(); ctx.ellipse(coinX, coinY, rX, rY, 0, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#b8860b'; ctx.lineWidth = 2;
+        ctx.stroke();
+        if (rX > 5) {
+            ctx.strokeStyle = '#ffe97a'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.ellipse(coinX, coinY, rX-5, rY-5, 0, 0, Math.PI*2); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // Flash on insert
+    if (t >= 1.0 && t < 1.35) {
+        const f = 1 - (t - 1.0) / 0.35;
+        ctx.fillStyle = `rgba(255,215,0,${f * 0.35})`;
+        ctx.fillRect(coinX-35, slotY-24, 70, 48);
+    }
+
+    // INSERT COIN blinking text
+    if (Math.floor(elapsed * 1.5) % 2 === 0) {
+        ctx.font = '14px "Press Start 2P"';
+        ctx.fillStyle = '#ffff00'; ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 18;
+        ctx.fillText('INSERT COIN', CW/2, 330);
+        ctx.shadowBlur = 0;
+    }
+
+    ctx.font = '7px "Press Start 2P"';
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillText('any key  |  tap  |  click', CW/2, 372);
+    ctx.textBaseline = 'alphabetic';
+}
+
 function drawMenu() {
     drawGrid();
     ctx.drawImage(_scanCanvas, 0, 0);
@@ -1629,8 +1660,14 @@ drawDpad(null);
 // ================================================================
 const GDIRS={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}};
 
+function leaveSplash() {
+    Snd.resume();
+    phase = 'menu'; phaseAt = performance.now();
+}
+
 function handleKey(key, pde) {
-    Snd.resume(key);
+    if (phase === 'splash') { leaveSplash(); if (pde) pde(); return; }
+    Snd.resume();
 
     // Global: mute (suppressed during name entry so M is typeable)
     if((key==='m'||key==='M')&&phase!=='nameEntry'){ toggleMute(); return; }
@@ -1790,6 +1827,10 @@ canvas.addEventListener('mousemove', ()=>{ canvas.style.cursor=''; });
 // the angle exits into a real corridor.
 // Pause cooldown: if finger stops moving for 200ms the higher threshold resets to 30px,
 // so deliberate re-moves after a pause feel as responsive as the first direction.
+// Splash: any pointer or touch on canvas exits splash and unlocks audio
+canvas.addEventListener('pointerdown', e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(); } });
+canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(); } }, { passive: false });
+
 const SWIPE_1=30, SWIPE_N=40, SWIPE_SAME=50, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=200;
 function _isOpp(a,b){return(a==='ArrowLeft'&&b==='ArrowRight')||(a==='ArrowRight'&&b==='ArrowLeft')||(a==='ArrowUp'&&b==='ArrowDown')||(a==='ArrowDown'&&b==='ArrowUp');}
 let _swipeBase=null, _swipeLastDir=null, _swipeLastMoveAt=0;
@@ -1932,8 +1973,8 @@ function loop(now) {
     fpsFrames++;
     if(now-fpsLast>=500){fpsVal=Math.round(fpsFrames*1000/(now-fpsLast));fpsFrames=0;fpsLast=now;fpsEl.textContent=`${fpsVal} FPS`;}
 
-    // Music routing (skip paused / quitConfirm states)
-    if(phase!=='paused'&&phase!=='quitConfirm'){
+    // Music routing (skip splash/paused/quitConfirm states)
+    if(phase!=='splash'&&phase!=='paused'&&phase!=='quitConfirm'){
         const menuPhase=['menu','settings','scores','credits','nameEntry','achievements','shop'].includes(phase);
         const gamePhase=['playing','levelReady','dying','levelDone'].includes(phase);
         const wt=menuPhase?menuTrack():gamePhase?gameTrack():null;
@@ -1961,7 +2002,8 @@ function loop(now) {
     }
 
     // Draw
-    if     (phase==='menu')         {drawMenu();           showHUD(false);}
+    if     (phase==='splash')       {drawSplash(now);      showHUD(false);}
+    else if(phase==='menu')         {drawMenu();           showHUD(false);}
     else if(phase==='settings')     {drawSettings();       showHUD(false);}
     else if(phase==='scores')       {drawScores();         showHUD(false);}
     else if(phase==='achievements') {drawAchievements();   showHUD(false);}
