@@ -369,9 +369,10 @@ const Snd = (() => {
         if (ac) return;
         try {
             ac = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('[Snd] AC created, state:', ac.state);
             mGain = ac.createGain(); mGain.gain.value = 0.32 * _vol; mGain.connect(ac.destination);
             sGain = ac.createGain(); sGain.gain.value = 0.58 * _sfxVol; sGain.connect(ac.destination);
-        } catch(e) { ac = null; }
+        } catch(e) { ac = null; console.log('[Snd] AC creation failed:', e); }
     }
 
     function tone(freq, when, dur, type, vol, detune, dest) {
@@ -403,8 +404,10 @@ const Snd = (() => {
         else if (ch.fn === 'stab')   tone(freq, when, dur, 'sawtooth', ch.vol, 0);
     }
 
+    let _dbgTickLogged = false;
     function tick(musicOn) {
         if (!ac || !curTrack || !musicOn || isPaused) return;
+        if (!_dbgTickLogged) { console.log('[Snd] tick() scheduling notes, ac.state:', ac.state, 'curTrack:', curTrack); _dbgTickLogged = true; }
         const seq = SEQ[curTrack], spb = 60 / seq.bpm;
         seq.channels.forEach((ch, ci) => {
             const st = chState[ci];
@@ -419,7 +422,9 @@ const Snd = (() => {
 
     function play(t) {
         if (!ac || curTrack === t) return;
+        console.log('[Snd] play('+t+'), ac.state:', ac.state, 'was:', curTrack);
         curTrack = t; isPaused = false;
+        _dbgTickLogged = false;
         chState = SEQ[t].channels.map(() => ({ pos: 0, nextNote: ac.currentTime }));
         mGain.gain.cancelScheduledValues(ac.currentTime);
         mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime, 0.08);
@@ -448,8 +453,11 @@ const Snd = (() => {
 
     function resume() {
         if (!ac) { init(); }
+        console.log('[Snd] resume(), ac.state:', ac ? ac.state : 'no AC');
         if (ac && ac.state === 'suspended') {
+            console.log('[Snd] calling ac.resume()...');
             ac.resume().then(() => {
+                console.log('[Snd] ac.resume() resolved, state now:', ac.state, 'curTrack:', curTrack);
                 if (curTrack && SEQ[curTrack]) {
                     chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + 0.05 }));
                     mGain.gain.cancelScheduledValues(ac.currentTime);
