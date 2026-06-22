@@ -1,114 +1,111 @@
-        @font-face {
-            font-family: 'Press Start 2P';
-            font-style: normal;
-            font-weight: 400;
-            font-display: swap;
-            src: url('./fonts/PressStart2P-Regular.woff2') format('woff2');
-        }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background: #07070e;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; padding: 8px; gap: 10px;
-            font-family: 'Press Start 2P', 'Courier New', monospace; color: #ccc;
-            user-select: none; -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            overflow: hidden;
-        }
-        #hud {
-            display: flex; flex-direction: column; gap: 3px;
-            width: min(600px, calc(100vw - 16px));
-            font-size: 12px; letter-spacing: 0;
-            opacity: 1; transition: opacity 0.15s;
-        }
-        #hud.hidden { opacity: 0; pointer-events: none; }
-        .hud-row { display: flex; justify-content: space-between; width: 100%; }
-        .hl { color: #888; } .hv { color: #7fff7f; }
-        #lives-group { display: inline-flex; align-items: center; gap: 4px; }
-        .hv-wrap { display: inline-flex; align-items: baseline; }
-        #topbar {
-            width: min(600px, calc(100vw - 16px));
-            display: flex; justify-content: space-between; align-items: center; padding: 0 2px;
-        }
-        #fps-el { font: 8px 'Press Start 2P',monospace; color: #7aaa7a; }
-        #btn-mute {
-            background: #0d180d; border: 1px solid #3a5a3a;
-            cursor: pointer; border-radius: 3px; padding: 3px;
-            display: flex; align-items: center; justify-content: center;
-            -webkit-tap-highlight-color: transparent; line-height: 0;
-        }
-        #btn-mute canvas { image-rendering: pixelated; display: block; }
-        #btn-mute:hover { border-color: #7fff7f; }
-        #btn-mute.muted { border-color: #5a2a2a; }
-        #wrap { width: min(600px, calc(100vw - 16px)); }
-        canvas#c { display: block; width: 100%; height: auto; border: 1px solid #2a2a4e; touch-action: none; }
-        #gamepad { display: none; align-items: center; justify-content: center; gap: 26px; }
-        @media (pointer: coarse) { #gamepad { display: flex; } }
-        #gamepad.splash #left-btns, #gamepad.splash #dpad-c { opacity: 0.2; }
-        #dpad-c { width: min(120px, 33vw); height: min(120px, 33vw); touch-action: none; display: block; }
-        #left-btns, #side-btns { display: flex; flex-direction: column; gap: 14px; }
-        .sbtn {
-            width: 54px; height: 54px;
-            background: #0d180d; border: 1px solid #3a5a3a; color: #7fff7f;
-            font: 8px 'Press Start 2P',monospace; cursor: pointer; border-radius: 6px;
-            -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center;
-        }
-        .sbtn:active { background: #1a3a1a; border-color: #7fff7f; }
-        #side-info { display: contents; }
-        @media (min-width: 700px) and (min-height: 500px) {
-            #wrap, #hud, #topbar {
-                width: min(calc((100vh - 100px) * 1.5), calc(100vw - 32px), 800px);
-            }
-        }
-        /* Portrait touch: push canvas well up to give controls breathing room */
-        @media (pointer: coarse) and (orientation: portrait) {
-            body { padding-top: 0; padding-bottom: 64px; }
-            #gamepad { margin-top: 28px; }
-        }
-        @media (orientation: landscape) and (max-height: 520px) {
-            body {
-                flex-direction: row; align-items: stretch; justify-content: center;
-                /* No vertical padding so canvas fills full screen height.
-                   Tiny horizontal padding keeps panels off the screen edge. */
-                padding: 0 3px; gap: 6px; height: 100dvh; min-height: unset; overflow: hidden;
-            }
-            /* Left info panel — 80px keeps HUD text legible; SND/FPS inset 16px from canvas edges */
-            #side-info {
-                display: flex; flex-direction: column; justify-content: flex-start;
-                align-items: flex-start; gap: 14px;
-                width: 80px; flex-shrink: 0; overflow: hidden;
-                position: relative;
-                padding: 16px 0;
-            }
-            #topbar { width: auto; padding: 0; gap: 8px; }
-            #fps-el { position: absolute; bottom: 16px; left: 0; }
-            #hud { width: auto; flex-direction: column; gap: 8px; letter-spacing: 0; }
-            .hud-row { flex-direction: column; gap: 8px; }
-            .hud-row > span { display: flex; flex-direction: column; gap: 2px; }
-            #lives-group { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 3px; }
-            #wrap {
-                flex: 1; min-width: 0; width: auto;
-                display: flex; align-items: center; justify-content: center;
-            }
-            /* 32px = 2 * 16px side-info padding, so canvas margins match SND/FPS inset exactly */
-            canvas#c {
-                width: min(calc((100dvh - 32px) * 1.5), 100%);
-                height: auto;
-            }
-            /* Right controls panel — 160px gives d-pad comfortable margins */
-            #gamepad {
-                width: 160px; flex-shrink: 0; flex-direction: column;
-                align-items: center; justify-content: center; gap: 18px;
-            }
-            #dpad-c { width: min(120px, 28vw); height: min(120px, 28vw); }
-            .sbtn { width: 46px; height: 46px; font-size: 11px; }
-            #left-btns, #side-btns { gap: 12px; }
-            /* Left-handed: controls move to left panel, info to right; canvas leans right */
-            body.lefty #gamepad   { order: 1; }
-            body.lefty #wrap      { order: 2; }
-            body.lefty #side-info { order: 3; }
-        }
-        #name-inp {
-            position: fixed; left: -9999px; top: 50%; width: 1px; height: 1px; opacity: 0;
-        }
-    
+@font-face {
+    font-family: 'Press Start 2P';
+    font-display: swap;
+    src: url('./fonts/PressStart2P-Regular.woff2') format('woff2');
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: #07070e;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 8px; gap: 10px;
+    font-family: 'Press Start 2P', 'Courier New', monospace; color: #ccc;
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    overflow: hidden;
+}
+#hud {
+    display: flex; flex-direction: column; gap: 3px;
+    width: min(600px, calc(100vw - 16px));
+    font-size: 12px; letter-spacing: 0;
+    opacity: 1; transition: opacity 0.15s;
+}
+#hud.hidden { opacity: 0; pointer-events: none; }
+.hud-row { display: flex; justify-content: space-between; width: 100%; }
+.hl { color: #888; } .hv { color: #7fff7f; }
+#lives-group { display: inline-flex; align-items: center; gap: 4px; }
+.hv-wrap { display: inline-flex; align-items: baseline; }
+#topbar {
+    width: min(600px, calc(100vw - 16px));
+    display: flex; justify-content: space-between; align-items: center; padding: 0 2px;
+}
+#fps-el { font: 8px 'Press Start 2P',monospace; color: #7aaa7a; }
+#btn-mute {
+    background: #0d180d; border: 1px solid #3a5a3a;
+    cursor: pointer; border-radius: 3px; padding: 3px;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; line-height: 0;
+}
+#btn-mute canvas { image-rendering: pixelated; display: block; }
+#btn-mute:hover { border-color: #7fff7f; }
+#btn-mute.muted { border-color: #5a2a2a; }
+#wrap { width: min(600px, calc(100vw - 16px)); }
+#c { display: block; width: 100%; height: auto; border: 1px solid #2a2a4e; touch-action: none; }
+#gamepad { display: none; align-items: center; justify-content: center; gap: 26px; }
+@media (pointer: coarse) { #gamepad { display: flex; } }
+#gamepad.splash #left-btns, #gamepad.splash #dpad-c { opacity: 0.2; }
+#dpad-c { width: min(120px, 33vw); height: min(120px, 33vw); touch-action: none; display: block; }
+#left-btns, #side-btns { display: flex; flex-direction: column; gap: 14px; }
+.sbtn {
+    width: 54px; height: 54px;
+    background: #0d180d; border: 1px solid #3a5a3a; color: #7fff7f;
+    font: 8px 'Press Start 2P',monospace; cursor: pointer; border-radius: 6px;
+    -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center;
+}
+.sbtn:active { background: #1a3a1a; border-color: #7fff7f; }
+#side-info { display: contents; }
+@media (min-width: 700px) and (min-height: 500px) {
+    #wrap, #hud, #topbar {
+        width: min(calc((100vh - 100px) * 1.5), calc(100vw - 32px), 800px);
+    }
+}
+/* Portrait touch: push canvas well up to give controls breathing room */
+@media (pointer: coarse) and (orientation: portrait) {
+    body { padding-top: 0; padding-bottom: 64px; }
+    #gamepad { margin-top: 28px; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+    body {
+        flex-direction: row; align-items: stretch; justify-content: center;
+        /* No vertical padding so canvas fills full screen height.
+           Tiny horizontal padding keeps panels off the screen edge. */
+        padding: 0 3px; gap: 6px; height: 100dvh; min-height: unset;
+    }
+    /* Left info panel — 80px keeps HUD text legible; SND/FPS inset 16px from canvas edges */
+    #side-info {
+        display: flex; flex-direction: column; justify-content: flex-start;
+        align-items: flex-start; gap: 14px;
+        width: 80px; flex-shrink: 0; overflow: hidden;
+        position: relative;
+        padding: 16px 0;
+    }
+    #topbar { width: auto; padding: 0; gap: 8px; }
+    #fps-el { position: absolute; bottom: 16px; left: 0; }
+    #hud { width: auto; flex-direction: column; gap: 8px; }
+    .hud-row { flex-direction: column; gap: 8px; }
+    .hud-row > span { display: flex; flex-direction: column; gap: 2px; }
+    #lives-group { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-bottom: 3px; }
+    #wrap {
+        flex: 1; min-width: 0; width: auto;
+        display: flex; align-items: center; justify-content: center;
+    }
+    /* 32px = 2 * 16px side-info padding, so canvas margins match SND/FPS inset exactly */
+    #c {
+        width: min(calc((100dvh - 32px) * 1.5), 100%);
+        height: auto;
+    }
+    /* Right controls panel — 160px gives d-pad comfortable margins */
+    #gamepad {
+        width: 160px; flex-shrink: 0; flex-direction: column;
+        align-items: center; justify-content: center; gap: 18px;
+    }
+    #dpad-c { width: min(120px, 28vw); height: min(120px, 28vw); }
+    .sbtn { width: 46px; height: 46px; font-size: 11px; }
+    #left-btns, #side-btns { gap: 12px; }
+    /* Left-handed: controls move to left panel, info to right; canvas leans right */
+    body.lefty #gamepad   { order: 1; }
+    body.lefty #wrap      { order: 2; }
+    body.lefty #side-info { order: 3; }
+}
+#name-inp {
+    position: fixed; left: -9999px; top: 50%; width: 1px; height: 1px; opacity: 0;
+}
