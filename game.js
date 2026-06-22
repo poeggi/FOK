@@ -484,7 +484,7 @@ function addScore(name, sc, lvl) {
     addFOKoins(sc);
 }
 function saveCfg() { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch {} }
-function loadCfg() { try { Object.assign(cfg, JSON.parse(localStorage.getItem(CFG_KEY) || '{}')); } catch {} }
+function loadCfg() { try { const s=JSON.parse(localStorage.getItem(CFG_KEY)||'{}'); if(!s.cfgVer){delete s.touchSelect;} Object.assign(cfg,s); } catch {} }
 
 const ACH_KEY = 'fok-snake-ach';
 let achUnlocked = {};
@@ -557,7 +557,7 @@ let phase = 'splash';
 let menuSel = 0, settingsSel = 0, shopSel = 0, quitConfirmSel = 1, prevPhase = 'playing';
 const MENU_ITEMS     = ['PLAY', 'SETTINGS', 'HIGH SCORES', 'ACHIEVEMENTS', 'SHOP', 'CREDITS'];
 const SETTINGS_COUNT = 10;
-let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0, shopItems: {}, wornItems: null, handed: 0, volume: 1, sfxVol: 0.5, turbo: true, touchSelect: true };
+let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0, shopItems: {}, wornItems: null, handed: 0, volume: 1, sfxVol: 0.5, turbo: true, touchSelect: true, cfgVer: 1 };
 loadCfg();
 if(cfg.wornItems === null){ cfg.wornItems = {...(cfg.shopItems||{})}; saveCfg(); }
 Snd.setVol(cfg.volume ?? 1);
