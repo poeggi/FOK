@@ -283,7 +283,7 @@ const ctx = canvas.getContext('2d');
 // AUDIO
 // ================================================================
 const Snd = (() => {
-    let ac = null, mGain, sGain;
+    let ac = null, mGain, sGain, _vol = 1;
     let chState = [], curTrack = null, isPaused = false;
 
     const SEQ = {
@@ -367,8 +367,8 @@ const Snd = (() => {
         if (ac) return;
         try {
             ac = new (window.AudioContext || window.webkitAudioContext)();
-            mGain = ac.createGain(); mGain.gain.value = 0.32; mGain.connect(ac.destination);
-            sGain = ac.createGain(); sGain.gain.value = 0.58; sGain.connect(ac.destination);
+            mGain = ac.createGain(); mGain.gain.value = 0.32 * _vol; mGain.connect(ac.destination);
+            sGain = ac.createGain(); sGain.gain.value = 0.58 * _vol; sGain.connect(ac.destination);
         } catch(e) { ac = null; }
     }
 
@@ -487,7 +487,8 @@ const Snd = (() => {
         }
     }
 
-    return { init, tick, play, stop, pauseMusic, resumeMusic, resume, unlock, sfx };
+    function setVol(v){ _vol=v; if(mGain){mGain.gain.value=0.32*v; sGain.gain.value=0.58*v;} }
+    return { init, tick, play, stop, pauseMusic, resumeMusic, resume, unlock, sfx, setVol };
 })();
 
 // First interaction unlocks audio so menu music starts immediately
@@ -607,11 +608,11 @@ function credTotalH() { let h=0; for(const[t,v] of CRED) h += t==='gap' ? v : (C
 let phase = 'menu';
 let menuSel = 0, settingsSel = 0, shopSel = 0, quitConfirmSel = 1, prevPhase = 'playing';
 const MENU_ITEMS     = ['PLAY', 'SETTINGS', 'HIGH SCORES', 'ACHIEVEMENTS', 'SHOP', 'CREDITS'];
-const SETTINGS_ITEMS = ['MUSIC', 'MUSIC STYLE', 'DIFFICULTY', 'SNAKE COLOR', 'LAYOUT', 'BACK'];
-let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0, shopItems: {}, wornItems: null, handed: 0 };
+const SETTINGS_ITEMS = ['MUSIC', 'MUSIC STYLE', 'VOLUME', 'TURBO', 'DIFFICULTY', 'SNAKE COLOR', 'LAYOUT', 'TOUCH SELECT', 'BACK'];
+let cfg = { music: true, diff: 1, musicStyle: 0, snakeColor: 0, shopItems: {}, wornItems: null, handed: 0, volume: 1, turbo: true, touchSelect: false };
 loadCfg();
-// null sentinel: first launch after this change — treat all owned items as worn
 if(cfg.wornItems === null){ cfg.wornItems = {...(cfg.shopItems||{})}; saveCfg(); }
+Snd.setVol(cfg.volume ?? 1);
 function applyHandedness() { document.body.classList.toggle('lefty', cfg.handed === 1); }
 applyHandedness();
 
@@ -1078,20 +1079,31 @@ function drawMenu() {
 
 function drawSettings() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20; ct('SETTINGS',CW/2,60,'#7fff7f',22); ctx.shadowBlur=0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20; ct('SETTINGS',CW/2,24,'#7fff7f',18); ctx.shadowBlur=0;
     const sc=SNAKE_COLORS[cfg.snakeColor||0];
+    const vol=Math.round((cfg.volume??1)*10);
     const items = [
         'MUSIC: '+(cfg.music?'ON':'OFF'),
         'MUSIC STYLE: '+(cfg.musicStyle===0?'NEW':'CLASSIC'),
+        'VOLUME: '+Math.round((cfg.volume??1)*100)+'%',
+        'TURBO: '+(cfg.turbo!==false?'ON':'OFF'),
         'DIFFICULTY: '+DIFF[cfg.diff].label,
         'SNAKE COLOR: '+sc.name,
         'LAYOUT: '+(cfg.handed?'LEFT':'RIGHT'),
+        'TOUCH SELECT: '+(cfg.touchSelect?'ON':'OFF'),
         'BACK',
     ];
-    items.forEach((item,i)=>menuItem(item,96+i*46,i===settingsSel));
-    // Small snake preview for color setting
-    if(settingsSel===3){
-        const py=96+3*46;
+    const startY=46, rowH=32;
+    items.forEach((item,i)=>menuItem(item,startY+i*rowH,i===settingsSel));
+    // Volume bar when selected
+    if(settingsSel===2){
+        const py=startY+2*rowH, bx=CW/2-55, bw=110;
+        ctx.fillStyle='#1a2a1a'; ctx.fillRect(bx,py+10,bw,5);
+        ctx.fillStyle='#7fff7f'; ctx.fillRect(bx,py+10,Math.round(bw*vol/10),5);
+    }
+    // Snake color mini-preview when selected
+    if(settingsSel===5){
+        const py=startY+5*rowH;
         ctx.save();
         ctx.font='13px "Press Start 2P"';
         const tw=ctx.measureText('> SNAKE COLOR: '+sc.name+' <').width;
@@ -1104,7 +1116,7 @@ function drawSettings() {
         }
         ctx.restore();
     }
-    ct('LEFT/RIGHT to change   OK to toggle   ESC to go back',CW/2,CH-14,'#999',8,false);
+    ct('LEFT/RIGHT to change   OK to toggle   ESC back',CW/2,CH-14,'#999',8,false);
 }
 
 function drawMiniSnake(x, y, colorIdx) {
@@ -1350,7 +1362,7 @@ function drawCredits() {
     ctx.restore();
     creditsScroll -= creditsSpeed;
     if (creditsScroll < -(credTotalH())) creditsScroll = CH + 40;  // loop
-    ct('UP slow  DOWN fast  |  ENTER exit', CW/2, CH-12, '#6a9a6a', 8, false);
+    ct('HOLD UP slow  HOLD DOWN fast  |  ENTER exit', CW/2, CH-12, '#6a9a6a', 8, false);
 }
 
 function drawNameEntry(now) {
@@ -1591,24 +1603,31 @@ function handleKey(key, pde) {
             Snd.sfx('select',cfg.music);
             if(settingsSel===0){cfg.music=!cfg.music;if(!cfg.music)Snd.stop();updateMuteBtn();}
             else if(settingsSel===1){cfg.musicStyle=(cfg.musicStyle+1)%2;Snd.stop();}
-            else if(settingsSel===2)cfg.diff=(cfg.diff+1)%DIFF.length;
-            else if(settingsSel===3)cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;
-            else if(settingsSel===4){cfg.handed=(cfg.handed+1)%2;applyHandedness();}
+            else if(settingsSel===3){cfg.turbo=cfg.turbo===false?true:false;}
+            else if(settingsSel===4)cfg.diff=(cfg.diff+1)%DIFF.length;
+            else if(settingsSel===5)cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;
+            else if(settingsSel===6){cfg.handed=(cfg.handed+1)%2;applyHandedness();}
+            else if(settingsSel===7){cfg.touchSelect=!cfg.touchSelect;}
             else phase='menu';
             saveCfg();
         }
-        if(key==='ArrowLeft'){
-            if(settingsSel===3){cfg.snakeColor=(cfg.snakeColor-1+SNAKE_COLORS.length)%SNAKE_COLORS.length;saveCfg();Snd.sfx('nav',cfg.music);}
-            else if(settingsSel===4){cfg.handed=0;applyHandedness();saveCfg();Snd.sfx('nav',cfg.music);}
-            else{phase='menu';Snd.sfx('nav',cfg.music);}
+        if(key==='ArrowLeft'||key==='ArrowRight'){
+            const r=key==='ArrowRight';
+            if(settingsSel===2){
+                cfg.volume=Math.max(0,Math.min(1,Math.round(((cfg.volume??1)+(r?0.1:-0.1))*10)/10));
+                Snd.setVol(cfg.volume); saveCfg(); Snd.sfx('nav',cfg.music);
+            } else if(settingsSel===5){
+                cfg.snakeColor=(cfg.snakeColor+(r?1:-1)+SNAKE_COLORS.length)%SNAKE_COLORS.length;
+                saveCfg(); Snd.sfx('nav',cfg.music);
+            } else if(settingsSel===6){
+                cfg.handed=r?1:0; applyHandedness(); saveCfg(); Snd.sfx('nav',cfg.music);
+            } else if(!r){ phase='menu'; Snd.sfx('nav',cfg.music); }
         }
-        if(key==='ArrowRight'&&settingsSel===3){cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;saveCfg();Snd.sfx('nav',cfg.music);}
-        if(key==='ArrowRight'&&settingsSel===4){cfg.handed=1;applyHandedness();saveCfg();Snd.sfx('nav',cfg.music);}
         if(pde)pde();
     }
     else if(phase==='credits'){
-        if(key==='ArrowDown'){creditsSpeed=Math.min(creditsSpeed*2,6.4);if(pde)pde();}
-        else if(key==='ArrowUp'){creditsSpeed=Math.max(creditsSpeed/2,0.1);if(pde)pde();}
+        if(key==='ArrowDown'){creditsSpeed=1.6;if(pde)pde();}
+        else if(key==='ArrowUp'){creditsSpeed=0.4;if(pde)pde();}
         else{phase='menu';creditsSpeed=0.8;if(pde)pde();}
     }
     else if(phase==='scores'){ phase='menu'; if(pde)pde(); }
@@ -1713,7 +1732,7 @@ canvas.addEventListener('touchend',e=>{
     e.preventDefault();
     if(_swipeBase){
         const t=e.changedTouches[0];
-        if(Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&phase!=='playing') handleKey('Enter',null);
+        if(Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&phase!=='playing'&&cfg.touchSelect) handleKey('Enter',null);
     }
     _swipeBase=null; _swipeLastDir=null;
     if(phase==='playing'){boostDir=null;boosting=false;}
@@ -1727,6 +1746,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keyup', e=>{
     const d=GDIRS[e.key];
     if(d&&boostDir&&d.x===boostDir.x&&d.y===boostDir.y){boostDir=null;boosting=false;}
+    if(phase==='credits'&&(e.key==='ArrowDown'||e.key==='ArrowUp'))creditsSpeed=0.8;
 });
 
 // Side buttons
@@ -1828,7 +1848,7 @@ function loop(now) {
     // Transitions
     if(phase==='playing'){
         if(boostDir&&boostDir.x===dir.x&&boostDir.y===dir.y&&dirQueue.length===0){
-            if(!boosting&&now-boostSince>=BOOST_GRACE)boosting=true;
+            if(!boosting&&now-boostSince>=BOOST_GRACE&&cfg.turbo!==false)boosting=true;
         }else boosting=false;
         if(now>=stepAt){const es=boosting?Math.max(40,Math.round(speed/2)):speed;stepAt=now+es;step(now);}
     }
