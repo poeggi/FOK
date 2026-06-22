@@ -1678,7 +1678,13 @@ function handleKey(key, pde) {
 
 canvas.addEventListener('mousemove', ()=>{ canvas.style.cursor=''; });
 
-// Swipe/gesture control on game canvas — 30px chunks, L-shapes work naturally
+// Swipe/gesture control on game canvas.
+// Thresholds: 30px for first direction, 40px for each subsequent (reduces false U-turns).
+// Dead zone: 40-50 degrees from horizontal — diagonal motion commits nothing until
+// the finger clearly enters a direction corridor (0-40 deg = horizontal, 50-90 = vertical).
+// In the dead zone the baseline is NOT reset, so displacement keeps accumulating until
+// the angle exits into a real corridor.
+const SWIPE_1=30, SWIPE_N=40, DZ_LO=40, DZ_HI=50;
 let _swipeBase=null, _swipeLastDir=null;
 canvas.addEventListener('touchstart',e=>{
     e.preventDefault(); Snd.resume();
@@ -1690,8 +1696,10 @@ canvas.addEventListener('touchmove',e=>{
     if(!_swipeBase) return;
     const t=e.touches[0];
     const dx=t.clientX-_swipeBase.x, dy=t.clientY-_swipeBase.y;
-    if(Math.hypot(dx,dy)<30) return;
-    const key=Math.abs(dx)>=Math.abs(dy)?(dx>0?'ArrowRight':'ArrowLeft'):(dy>0?'ArrowDown':'ArrowUp');
+    if(Math.hypot(dx,dy)<(_swipeLastDir?SWIPE_N:SWIPE_1)) return;
+    const ang=Math.atan2(Math.abs(dy),Math.abs(dx))*180/Math.PI;
+    if(ang>=DZ_LO&&ang<=DZ_HI) return; // diagonal dead zone — keep accumulating
+    const key=ang<DZ_LO?(dx>0?'ArrowRight':'ArrowLeft'):(dy>0?'ArrowDown':'ArrowUp');
     handleKey(key,null);
     if(phase==='playing'&&key!==_swipeLastDir){const d=GDIRS[key];if(d){boostDir=d;boostSince=performance.now();boosting=false;}}
     _swipeLastDir=key; _swipeBase={x:t.clientX,y:t.clientY};
@@ -1700,7 +1708,7 @@ canvas.addEventListener('touchend',e=>{
     e.preventDefault();
     if(_swipeBase){
         const t=e.changedTouches[0];
-        if(Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<30&&phase!=='playing') handleKey('Enter',null);
+        if(Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&phase!=='playing') handleKey('Enter',null);
     }
     _swipeBase=null; _swipeLastDir=null;
     if(phase==='playing'){boostDir=null;boosting=false;}
