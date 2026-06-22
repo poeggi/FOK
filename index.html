@@ -457,10 +457,10 @@ const Snd = (() => {
         if (!ac) { init(); }
         if (ac && ac.state === 'suspended') {
             ac.resume().then(() => {
+                // Only restart note scheduling — do NOT touch mGain here.
+                // play() already scheduled the 1-second linear fade-in and owns mGain.
                 if (curTrack && SEQ[curTrack]) {
                     chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + 0.05 }));
-                    mGain.gain.cancelScheduledValues(ac.currentTime);
-                    mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime, 0.08);
                 }
             });
         }
