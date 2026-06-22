@@ -1607,7 +1607,7 @@ function dpadDir(e, cvs) {
 }
 
 dpadCanvas.addEventListener('touchstart',e=>{
-    e.preventDefault(); Snd.resume();
+    Snd.resume(); e.preventDefault();
     dpadActive=dpadDir(e,dpadCanvas); handleKey(dpadActive,null); drawDpad(dpadActive);
     if(phase==='playing'){const d=GDIRS[dpadActive];if(d){boostDir=d;boostSince=performance.now();boosting=false;}}
 },{passive:false});
@@ -1819,14 +1819,14 @@ canvas.addEventListener('pointerdown', e => {
     if (phase === 'splash') { leaveSplash(false); }
     else if (phase !== 'playing') { handleKey('Enter', null); }
 });
-canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(true); } }, { passive: false });
+canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { leaveSplash(true); e.preventDefault(); } }, { passive: false });
 
 const nameInp = document.getElementById('name-inp');
 const SWIPE_1=20, SWIPE_N=30, SWIPE_SAME=50, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=200;
 function _isOpp(a,b){return(a==='ArrowLeft'&&b==='ArrowRight')||(a==='ArrowRight'&&b==='ArrowLeft')||(a==='ArrowUp'&&b==='ArrowDown')||(a==='ArrowDown'&&b==='ArrowUp');}
 let _swipeBase=null, _swipeLastDir=null, _swipeLastMoveAt=0, _swipeLastMovePos=null;
 canvas.addEventListener('touchstart',e=>{
-    e.preventDefault(); Snd.resume();
+    Snd.resume(); e.preventDefault();
     if(phase==='nameEntry'){ nameInp.focus(); }
     const t=e.touches[0];
     _swipeBase={x:t.clientX,y:t.clientY}; _swipeLastDir=null; _swipeLastMoveAt=performance.now(); _swipeLastMovePos={x:t.clientX,y:t.clientY};
@@ -1893,12 +1893,12 @@ document.addEventListener('keyup', e=>{
 });
 
 // Side buttons
-document.getElementById('btn-ok').addEventListener('touchstart',e=>{e.preventDefault();handleKey('Enter',null);},{passive:false});
+document.getElementById('btn-ok').addEventListener('touchstart',e=>{handleKey('Enter',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-ok').addEventListener('click',()=>handleKey('Enter',null));
-document.getElementById('btn-pause').addEventListener('touchstart',e=>{e.preventDefault();handleKey(' ',null);},{passive:false});
+document.getElementById('btn-pause').addEventListener('touchstart',e=>{handleKey(' ',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-pause').addEventListener('click',()=>handleKey(' ',null));
 document.getElementById('gamepad').classList.add('splash');
-document.getElementById('btn-esc').addEventListener('touchstart',e=>{e.preventDefault();handleKey('Escape',null);},{passive:false});
+document.getElementById('btn-esc').addEventListener('touchstart',e=>{handleKey('Escape',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escape',null));
 
 
