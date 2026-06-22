@@ -1,6 +1,6 @@
 // Bump this string with every deployment to force cache refresh on all clients
-const CACHE = 'snake-v9-23';
-const ASSETS = ['./', './manifest.json', './icon.svg'];
+const CACHE = 'snake-v9.1-0';
+const ASSETS = ['./', './manifest.json', './icon.svg', './fonts/PressStart2P-Regular.woff2'];
 
 self.addEventListener('install', e => {
     e.waitUntil(

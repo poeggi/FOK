@@ -11,9 +11,14 @@
     <meta name="apple-mobile-web-app-title" content="Snake FOK">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icon.svg">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Press Start 2P';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('./fonts/PressStart2P-Regular.woff2') format('woff2');
+        }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background: #07070e;
@@ -1240,7 +1245,7 @@ function drawMenu() {
     ctx.save();
     ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
     ctx.fillStyle='#4a7a4a'; ctx.textAlign='left';
-    ctx.fillText('v9', 10, CH-8);
+    ctx.fillText('v9.1', 10, CH-8);
     ctx.textAlign='center';
     ctx.fillText('UP/DOWN  |  ENTER to select', CW/2, CH-8);
     ctx.fillStyle='#ffd700'; ctx.textAlign='right';
@@ -1425,7 +1430,7 @@ function drawAchPopups(now) {
     const DUR=3800, FADE_IN=280, FADE_OUT=500;
     achPopups=achPopups.filter(p=>now-p.at<DUR);
     achPopups.forEach((p,i)=>{
-        const a=ACHIEVEMENTS.find(ac=>ac.id===p.id); if(!a) return;
+        const a=ACHIEVEMENTS.find(ac=>ac.id===p.id)||EXPERT_ACHIEVEMENTS.find(ac=>ac.id===p.id); if(!a) return;
         const age=now-p.at;
         const alpha=Math.min(1,age/FADE_IN)*(age>DUR-FADE_OUT?Math.max(0,1-(age-(DUR-FADE_OUT))/FADE_OUT):1);
         const slide=Math.max(0,(1-age/FADE_IN)*70);
@@ -1953,6 +1958,7 @@ function _isOpp(a,b){return(a==='ArrowLeft'&&b==='ArrowRight')||(a==='ArrowRight
 let _swipeBase=null, _swipeLastDir=null, _swipeLastMoveAt=0;
 canvas.addEventListener('touchstart',e=>{
     e.preventDefault(); Snd.resume();
+    if(phase==='nameEntry'){ nameInp.focus(); }
     const t=e.touches[0];
     _swipeBase={x:t.clientX,y:t.clientY}; _swipeLastDir=null; _swipeLastMoveAt=performance.now();
 },{passive:false});
@@ -1985,7 +1991,7 @@ canvas.addEventListener('touchmove',e=>{
 },{passive:false});
 canvas.addEventListener('touchend',e=>{
     e.preventDefault();
-    if(_splashTouchPending){ _swipeBase=null; _swipeLastDir=null; return; }
+    if(_splashTouchPending){ _splashTouchPending=false; _swipeBase=null; _swipeLastDir=null; return; }
     if(_swipeBase){
         const t=e.changedTouches[0];
         if(Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&phase!=='playing'&&cfg.touchSelect) handleKey('Enter',null);
@@ -2029,33 +2035,6 @@ drawDpad(null);
 document.getElementById('btn-esc').addEventListener('touchstart',e=>{e.preventDefault();handleKey('Escape',null);},{passive:false});
 document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escape',null));
 
-// Canvas swipe: direction fires immediately on touchmove threshold (not on touchend) for low latency
-let touchStart=null, swipeFired=false;
-canvas.addEventListener('touchstart',e=>{
-    e.preventDefault(); Snd.resume();
-    if(phase==='nameEntry'){ nameInp.focus(); return; }
-    touchStart={x:e.touches[0].clientX,y:e.touches[0].clientY}; swipeFired=false;
-},{passive:false});
-canvas.addEventListener('touchmove',e=>{
-    e.preventDefault();
-    if(!touchStart||swipeFired||_splashTouchPending) return;
-    const dx=e.touches[0].clientX-touchStart.x,dy=e.touches[0].clientY-touchStart.y;
-    const adx=Math.abs(dx),ady=Math.abs(dy);
-    if(Math.max(adx,ady)<14) return;
-    swipeFired=true;
-    if(adx>ady) handleKey(dx>0?'ArrowRight':'ArrowLeft',null);
-    else         handleKey(dy>0?'ArrowDown':'ArrowUp',null);
-},{passive:false});
-canvas.addEventListener('touchend',e=>{
-    if(_splashTouchPending){ _splashTouchPending=false; touchStart=null; swipeFired=false; return; }
-    if(!touchStart) return;
-    if(!swipeFired){
-        // short tap: treat as confirm/enter
-        const dx=e.changedTouches[0].clientX-touchStart.x,dy=e.changedTouches[0].clientY-touchStart.y;
-        if(Math.abs(dx)<20&&Math.abs(dy)<20) handleKey('Enter',null);
-    }
-    touchStart=null; swipeFired=false;
-},{passive:false});
 
 // Mobile name entry via OS keyboard
 const nameInp = document.getElementById('name-inp');
