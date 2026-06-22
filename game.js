@@ -294,9 +294,12 @@ const Snd = (() => {
         if (!ac || curTrack === t) return;
         curTrack = t; isPaused = false;
         chState = SEQ[t].channels.map(() => ({ pos: 0, nextNote: ac.currentTime }));
+        _justInited = false;
         mGain.gain.cancelScheduledValues(ac.currentTime);
-        if (_justInited) {
-            _justInited = false;
+        if (ac.state !== 'running') {
+            // AC still suspended; queue a gentle ramp so there is something
+            // scheduled when it resumes — resume().then() will cancel and
+            // replace this with a fast setTargetAtTime if curTrack is set.
             mGain.gain.setValueAtTime(0, ac.currentTime);
             mGain.gain.linearRampToValueAtTime(0.32 * _vol, ac.currentTime + 1.0);
         } else {
