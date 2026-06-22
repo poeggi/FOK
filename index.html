@@ -1069,7 +1069,7 @@ function drawMenu() {
     ctx.save();
     ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
     ctx.fillStyle='#4a7a4a'; ctx.textAlign='left';
-    ctx.fillText('v7', 10, CH-8);
+    ctx.fillText('v8', 10, CH-8);
     ctx.textAlign='center';
     ctx.fillText('UP/DOWN  |  ENTER to select', CW/2, CH-8);
     ctx.fillStyle='#ffd700'; ctx.textAlign='right';
@@ -1708,16 +1708,22 @@ canvas.addEventListener('mousemove', ()=>{ canvas.style.cursor=''; });
 // the finger clearly enters a direction corridor (0-40 deg = horizontal, 50-90 = vertical).
 // In the dead zone the baseline is NOT reset, so displacement keeps accumulating until
 // the angle exits into a real corridor.
-const SWIPE_1=30, SWIPE_N=40, DZ_LO=40, DZ_HI=50;
-let _swipeBase=null, _swipeLastDir=null;
+// Pause cooldown: if finger stops moving for 200ms the higher threshold resets to 30px,
+// so deliberate re-moves after a pause feel as responsive as the first direction.
+const SWIPE_1=30, SWIPE_N=40, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=200;
+let _swipeBase=null, _swipeLastDir=null, _swipeLastMoveAt=0;
 canvas.addEventListener('touchstart',e=>{
     e.preventDefault(); Snd.resume();
     const t=e.touches[0];
-    _swipeBase={x:t.clientX,y:t.clientY}; _swipeLastDir=null;
+    _swipeBase={x:t.clientX,y:t.clientY}; _swipeLastDir=null; _swipeLastMoveAt=performance.now();
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
     e.preventDefault();
     if(!_swipeBase) return;
+    const now=performance.now();
+    // Finger paused long enough — treat next move as a fresh first gesture
+    if(_swipeLastDir&&now-_swipeLastMoveAt>SWIPE_COOLDOWN) _swipeLastDir=null;
+    _swipeLastMoveAt=now;
     const t=e.touches[0];
     const dx=t.clientX-_swipeBase.x, dy=t.clientY-_swipeBase.y;
     if(Math.hypot(dx,dy)<(_swipeLastDir?SWIPE_N:SWIPE_1)) return;
