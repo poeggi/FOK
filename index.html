@@ -527,7 +527,8 @@ const Snd = (() => {
         }
     }
     function setSfxVol(v){ _sfxVol=v; if(sGain) sGain.gain.value=0.58*v; }
-    return { init, tick, play, stop, pauseMusic, resumeMusic, resume, sfx, setVol, setSfxVol };
+    function suspend() { if (ac && ac.state === 'running') ac.suspend(); }
+    return { init, tick, play, stop, pauseMusic, resumeMusic, resume, sfx, setVol, setSfxVol, suspend };
 })();
 
 // Audio is initialized from the splash screen interaction, which guarantees a clean
@@ -1392,7 +1393,7 @@ function drawShop() {
     drawGrid(); drawOvBg(0.92);
     ctx.shadowColor='#ffd700'; ctx.shadowBlur=20; ct('SHOP',CW/2,28,'#ffd700',18); ctx.shadowBlur=0;
     const coins=_cachedFOKoins, si=cfg.shopItems||{}, wi=cfg.wornItems||{};
-    const startY=56, rowH=58;
+    const startY=50, rowH=44;
     SHOP_ITEMS.forEach((item,i)=>{
         const y=startY+i*rowH, sel=i===shopSel;
         const isRep=!!item.repeatable;
@@ -1407,30 +1408,34 @@ function drawShop() {
         ctx.textAlign='left'; ctx.textBaseline='top';
         ctx.font='8px "Press Start 2P"';
         ctx.fillStyle=worn?'#7fff7f':(owned&&isRep)?'#ff66aa':owned?'#5a8aaa':sel?'#dddddd':'#aaaaaa';
-        ctx.fillText(item.name,46,y+10);
+        ctx.fillText(item.name,46,y+7);
         ctx.font='7px "Press Start 2P"'; ctx.fillStyle='#999999';
-        ctx.fillText(item.desc,46,y+26);
+        ctx.fillText(item.desc,46,y+21);
         ctx.textAlign='right';
         if(isRep){
-            if(owned){ctx.font='8px "Press Start 2P"';ctx.fillStyle='#ff44aa';ctx.fillText('DONATED',CW-18,y+14);}
-            else{ctx.font='8px "Press Start 2P"';ctx.fillStyle=canAfford?'#ffd700':'#553322';ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+14);}
+            if(owned){ctx.font='8px "Press Start 2P"';ctx.fillStyle='#ff44aa';ctx.fillText('DONATED',CW-18,y+9);}
+            else{ctx.font='8px "Press Start 2P"';ctx.fillStyle=canAfford?'#ffd700':'#553322';ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+9);}
             ctx.font='7px "Press Start 2P"';
-            if(sel){ctx.fillStyle=canAfford?'#5aaa5a':'#cc6644';ctx.fillText(canAfford?'ENTER to donate':'Not enough FK',CW-18,y+30);}
-            else if(owned){ctx.fillStyle='#555';ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+30);}
+            if(sel){ctx.fillStyle=canAfford?'#5aaa5a':'#cc6644';ctx.fillText(canAfford?'ENTER to donate':'Not enough FK',CW-18,y+23);}
+            else if(owned){ctx.fillStyle='#555';ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+23);}
         } else if(owned){
             ctx.font='8px "Press Start 2P"';
             ctx.fillStyle=worn?'#7fff7f':'#4a7a9a';
-            ctx.fillText(worn?'WORN':'OWNED',CW-18,y+14);
+            ctx.fillText(worn?'WORN':'OWNED',CW-18,y+9);
             ctx.font='7px "Press Start 2P"';
-            if(sel){ctx.fillStyle=worn?'#cc5555':'#5aaa5a';ctx.fillText(worn?'SPACE to remove':'SPACE to wear',CW-18,y+30);}
-            else{ctx.fillStyle='#555';ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+30);}
+            if(sel){ctx.fillStyle=worn?'#cc5555':'#5aaa5a';ctx.fillText(worn?'SPACE to remove':'SPACE to wear',CW-18,y+23);}
+            else{ctx.fillStyle='#555';ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+23);}
         } else {
             ctx.font='8px "Press Start 2P"'; ctx.fillStyle=canAfford?'#ffd700':'#553322';
-            ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+14);
+            ctx.fillText(`${item.price.toLocaleString()} FK`,CW-18,y+9);
             if(sel){ctx.font='7px "Press Start 2P"';ctx.fillStyle=canAfford?'#5aaa5a':'#cc6644';
-                ctx.fillText(canAfford?'ENTER to buy':'Not enough FK',CW-18,y+30);}
+                ctx.fillText(canAfford?'ENTER to buy':'Not enough FK',CW-18,y+23);}
         }
     });
+    // Empty slot placeholder (future item)
+    const emptyY=startY+SHOP_ITEMS.length*rowH;
+    ctx.fillStyle='rgba(10,10,10,0.15)'; rr(8,emptyY,CW-16,rowH-4,5); ctx.fill();
+    ctx.strokeStyle='#1c1c1c'; ctx.lineWidth=1; rr(8,emptyY,CW-16,rowH-4,5); ctx.stroke();
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor='#ffd700'; ctx.shadowBlur=2;
     ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',8);
@@ -1698,10 +1703,11 @@ drawDpad(null);
 // ================================================================
 const GDIRS={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}};
 
-let _splashLeftAt = 0;
-function leaveSplash() {
+let _splashLeftAt = 0, _splashTouchPending = false;
+function leaveSplash(fromTouch = false) {
     Snd.resume();
     _splashLeftAt = performance.now();
+    _splashTouchPending = fromTouch;
     phase = 'menu'; phaseAt = performance.now();
     document.getElementById('btn-mute').style.visibility = '';
     document.getElementById('fps-el').style.visibility = '';
@@ -1716,6 +1722,7 @@ function handleKey(key, pde) {
         if (!splashOk) return;
         leaveSplash(); if (pde) pde(); return;
     }
+    if (performance.now() - _splashLeftAt < 200) return;
     Snd.resume();
 
     // Global: mute (suppressed during name entry so M is typeable)
@@ -1840,7 +1847,7 @@ function handleKey(key, pde) {
         if(levelDoneWaiting){
             levelDoneWaiting=false;
             if(level<MAX_LEVELS){level++;beginLevel();}
-            else{phase='nameEntry';nameStr='';nameCharIdx=0;nameReason='win';showHUD(false);Snd.stop();}
+            else{phase='nameEntry';nameStr=localStorage.getItem('lastSName')||'PLISSKEN';nameCharIdx=0;nameReason='win';showHUD(false);Snd.stop();}
             if(pde)pde();
         }
     }
@@ -1860,6 +1867,7 @@ function handleKey(key, pde) {
         else if(key==='Backspace'||key==='ArrowLeft'){if(nameStr.length>0){nameStr=nameStr.slice(0,-1);Snd.sfx('nav',cfg.music);}if(pde)pde();}
         else if(key.length===1&&/^[a-zA-Z0-9 ]$/.test(key)&&nameStr.length<MAX_NAME){nameStr+=key.toUpperCase();Snd.sfx('nav',cfg.music);}
         else if(key==='Enter'){
+            localStorage.setItem('lastSName', nameStr.trim()||'PLISSKEN');
             addScore(nameStr,score,level); Snd.sfx('select',cfg.music);
             phase='scores'; showHUD(false); nameInp.blur();
         }
@@ -1877,10 +1885,10 @@ canvas.addEventListener('mousemove', ()=>{ canvas.style.cursor=''; });
 // Pause cooldown: if finger stops moving for 200ms the higher threshold resets to 30px,
 // so deliberate re-moves after a pause feel as responsive as the first direction.
 // Splash: any pointer or touch on canvas exits splash and unlocks audio
-canvas.addEventListener('pointerdown', e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(); } });
-canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(); } }, { passive: false });
+canvas.addEventListener('pointerdown', e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(true); } });
+canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { e.preventDefault(); leaveSplash(true); } }, { passive: false });
 
-const SWIPE_1=30, SWIPE_N=40, SWIPE_SAME=50, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=200;
+const SWIPE_1=30, SWIPE_N=40, SWIPE_SAME=60, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=200;
 function _isOpp(a,b){return(a==='ArrowLeft'&&b==='ArrowRight')||(a==='ArrowRight'&&b==='ArrowLeft')||(a==='ArrowUp'&&b==='ArrowDown')||(a==='ArrowDown'&&b==='ArrowUp');}
 let _swipeBase=null, _swipeLastDir=null, _swipeLastMoveAt=0;
 canvas.addEventListener('touchstart',e=>{
@@ -1890,7 +1898,7 @@ canvas.addEventListener('touchstart',e=>{
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
     e.preventDefault();
-    if(!_swipeBase||performance.now()-_splashLeftAt<400) return;
+    if(!_swipeBase||_splashTouchPending) return;
     const now=performance.now();
     if(_swipeLastDir&&now-_swipeLastMoveAt>SWIPE_COOLDOWN) _swipeLastDir=null;
     _swipeLastMoveAt=now;
@@ -1916,7 +1924,7 @@ canvas.addEventListener('touchmove',e=>{
 },{passive:false});
 canvas.addEventListener('touchend',e=>{
     e.preventDefault();
-    if(performance.now()-_splashLeftAt<400){ _swipeBase=null; _swipeLastDir=null; return; }
+    if(_splashTouchPending){ _swipeBase=null; _swipeLastDir=null; return; }
     if(_swipeBase){
         const t=e.changedTouches[0];
         if(Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&phase!=='playing'&&cfg.touchSelect) handleKey('Enter',null);
@@ -1928,6 +1936,11 @@ canvas.addEventListener('touchend',e=>{
 
 // Unlock audio on any pointer gesture (covers btn-ok and other non-canvas touches)
 document.addEventListener('pointerdown', () => Snd.resume(), {capture:true, passive:true});
+// Pause audio when app goes to background, resume when it returns
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { Snd.suspend(); }
+    else if (cfg.music) { Snd.resume(); }
+});
 document.addEventListener('keydown', e=>{
     handleKey(e.key,()=>e.preventDefault());
     if(!e.repeat&&phase==='playing'){const d=GDIRS[e.key];if(d){boostDir=d;boostSince=performance.now();boosting=false;}}
@@ -1957,7 +1970,7 @@ canvas.addEventListener('touchstart',e=>{
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
     e.preventDefault();
-    if(!touchStart||swipeFired||performance.now()-_splashLeftAt<400) return;
+    if(!touchStart||swipeFired||_splashTouchPending) return;
     const dx=e.touches[0].clientX-touchStart.x,dy=e.touches[0].clientY-touchStart.y;
     const adx=Math.abs(dx),ady=Math.abs(dy);
     if(Math.max(adx,ady)<14) return;
@@ -1966,7 +1979,7 @@ canvas.addEventListener('touchmove',e=>{
     else         handleKey(dy>0?'ArrowDown':'ArrowUp',null);
 },{passive:false});
 canvas.addEventListener('touchend',e=>{
-    if(performance.now()-_splashLeftAt<400){ touchStart=null; swipeFired=false; return; }
+    if(_splashTouchPending){ _splashTouchPending=false; touchStart=null; swipeFired=false; return; }
     if(!touchStart) return;
     if(!swipeFired){
         // short tap: treat as confirm/enter
@@ -2049,7 +2062,7 @@ function loop(now) {
     }
     if(phase==='dying'&&now-phaseAt>=DEATH_DUR){
         if(lives>0)beginLevel();
-        else{phase='nameEntry';nameStr='';nameCharIdx=0;nameReason='over';showHUD(false);Snd.stop();}
+        else{phase='nameEntry';nameStr=localStorage.getItem('lastSName')||'PLISSKEN';nameCharIdx=0;nameReason='over';showHUD(false);Snd.stop();}
     }
     if(phase==='levelDone'&&!levelDoneWaiting&&now-phaseAt>=LEVELDONE_DUR){
         levelDoneWaiting=true;
