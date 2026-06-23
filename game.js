@@ -1112,7 +1112,7 @@ function drawMenu() {
     ctx.save();
     ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
     ctx.fillStyle='#4a7a4a'; ctx.textAlign='left';
-    ctx.fillText('v1', 10, CH-8);
+    ctx.fillText(_swVersion, 10, CH-8);
     ctx.textAlign='center';
     ctx.fillText('UP/DOWN  |  ENTER to select', CW/2, CH-8);
     ctx.fillStyle='#ffd700'; ctx.textAlign='right';
@@ -2079,6 +2079,14 @@ function syncFontScale() {
 window.addEventListener('resize', syncFontScale);
 window.addEventListener('orientationchange', () => setTimeout(syncFontScale, 120));
 requestAnimationFrame(syncFontScale);
+
+let _swVersion = '?';
+if ('caches' in window) {
+    caches.keys().then(keys => {
+        const k = keys.find(k => k.startsWith('snake-'));
+        if (k) _swVersion = k.replace('snake-', '');
+    }).catch(() => {});
+}
 
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
