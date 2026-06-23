@@ -68,7 +68,7 @@ const ACHIEVEMENTS = [
       icon:{p:{A:'#cc44ff',B:'#ff88ff',C:'#ffffff'},d:['...A....','..ABA...','.ABCBA..','ABCCCBA.','.ABCBA..','..ABA...','...A....','........']}},
     { id:'perfect_level', name:'PERFECTIONIST', desc:'Complete a level perfectly',
       icon:{p:{A:'#ffd700',B:'#cc8800'},d:['A..A..A.','AAAAAAA.','AAAAAAA.','AAAAAAA.','BAAAAAAB','BAAAAAAB','........','........']}},
-    { id:'level10',       name:'CHAMPION',      desc:'Complete all 10 levels',
+    { id:'level10',       name:'CHAMPION',      desc:'Complete all 10 levels on normal+',
       icon:{p:{A:'#ffd700',B:'#cc8800'},d:['.AAAAA..','AAAAAAA.','AAAAAAA.','AAAAAAA.','.AAAAA..','..AAA...','BBBBBBB.','........']}},
     { id:'fokoins_100k',  name:'DRAGON RICH',   desc:'Earn 500,000 FOKoins',
       icon:{p:{A:'#888888',B:'#333333',C:'#cccccc',D:'#eeeeee'},d:['AAAAAAAA','ACDDDDCA','ADDDDDDA','ADDBDDDA','ADDDDDDA','ACDDDDCA','AAAAAAAA','........']}},
@@ -509,8 +509,10 @@ function spawnConfetti() {
 }
 function loadAch() { try { achUnlocked = JSON.parse(localStorage.getItem(ACH_KEY) || '{}'); } catch {} }
 function saveAch() { try { localStorage.setItem(ACH_KEY, JSON.stringify(achUnlocked)); } catch {} }
+const EASY_ACHS = new Set(['first_gem','level1','level5','fokoins_1k','fokoins_10k','fokoins_100k']);
 function unlockAch(id) {
     if(achUnlocked[id]) return;
+    if(cfg.diff === 0 && !EASY_ACHS.has(id)) return;
     achUnlocked[id] = Date.now(); saveAch();
     addFOKoins(1000);
     achPopups.push({ id, at: performance.now() });
