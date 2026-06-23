@@ -179,7 +179,7 @@ const Snd = (() => {
         mGain.gain.cancelScheduledValues(ac.currentTime);
         if (ac.state !== 'running') {
             // AC still suspended; queue a gentle ramp so there is something
-            // scheduled when it resumes — resume().then() will cancel and
+            // scheduled when it resumes -- resume().then() will cancel and
             // replace this with a fast setTargetAtTime if curTrack is set.
             mGain.gain.setValueAtTime(0, ac.currentTime);
             mGain.gain.linearRampToValueAtTime(0.32 * _vol, ac.currentTime + 1.0);
@@ -219,7 +219,7 @@ const Snd = (() => {
     function resume() {
         if (!ac) { init(); }
         if (ac && ac.state === 'suspended') {
-            // Multiple concurrent calls are safe (spec-idempotent). No guard needed —
+            // Multiple concurrent calls are safe (spec-idempotent). No guard needed --
             // iOS cold-start silently hangs the first call; every subsequent gesture
             // retries freely until one succeeds.
             ac.resume().then(() => {
@@ -303,7 +303,7 @@ const Snd = (() => {
         _bgSuspended = true;
         setTimeout(() => { try { if (ac && ac.state === 'running') ac.suspend(); } catch(e){} }, 120);
     }
-    // Like resume() but never creates the AC — safe to call from untrusted events
+    // Like resume() but never creates the AC -- safe to call from untrusted events
     // (pointerdown on iOS). Only resumes if the AC already exists and is suspended.
     function tryResume() {
         if (!ac || ac.state !== 'suspended') return;
@@ -415,7 +415,7 @@ const CRED = [
     ['hdr','VISUAL ARTS'],['txt','Claude V.'],['sml','(knows exactly 7 colors)'],['gap',28],
     ['hdr','QUALITY ASSURANCE'],['txt','The Snake'],['sml','(mortality rate: 100%)'],['gap',28],
     ['hdr','LEVEL DESIGN'],['txt','A Random Number Generator'],['sml','(certified barricade placement specialist)'],['gap',28],
-    ['hdr','GEM MANAGEMENT'],['txt','The Gems'],['sml','(eaten without consent since 2025)'],['gap',28],
+    ['hdr','GEM MANAGEMENT'],['txt','The Gems'],['sml','(eaten without consent since 2026)'],['gap',28],
     ['hdr','STRUCTURAL ENGINEERING'],['txt','The Barricades'],['sml','(load-bearing. do not touch.)'],['gap',28],
     ['hdr','SNAKE PSYCHOLOGY'],['txt','Dr. S. Nake, PhD'],['sml','(expert in self-collision trauma)'],['gap',28],
     ['hdr','CATERING'],['txt','The Break Room Snake'],['sml','(she also ate the coffee machine)'],['gap',40],
@@ -425,7 +425,7 @@ const CRED = [
     ['hdr','IN MEMORIAM'],
     ['txt','All snakes lost in beta testing.'],['txt','They knew the risks.'],['gap',50],
     ['coins'],['sml','(spend them in the SHOP)'],['gap',50],
-    ['sml','(C) 2025 FOK STUDIOS'],['sml','All rights reserved to nobody in particular.'],
+    ['sml','(C) 2026 FOK STUDIOS'],['sml','All rights reserved to nobody in particular.'],
     ['gap',30],['txt','PRESS OK OR ENTER TO EXIT'],['gap',280],
     ['secret','No Eastereggs here ;)'],['gap',240],
 ];
@@ -697,14 +697,14 @@ function ct(text,x,y,color,size) {
 }
 function menuItem(text,y,sel) {
     ctx.globalAlpha=sel?1:0.78;
-    if(sel){ctx.shadowColor='#7fff7f';ctx.shadowBlur=14;}
-    ct(sel?('> '+text+' <'):text,CW/2,y,sel?'#7fff7f':'#cccccc',13);
+    ctx.shadowColor=sel?'#7fff7f':'#cccccc'; ctx.shadowBlur=sel?12:1;
+    ct(sel?('> '+text+' <'):text,CW/2,y,sel?'#7fff7f':'#cccccc',14);
     ctx.shadowBlur=0; ctx.globalAlpha=1;
 }
 
 // High-contrast barricades (>4.5:1 on dark bg) - bright amber brick
 function drawBar(b, c=ctx) {
-    if(b.paired && !b.pairEnd) return; // second cell of a pair — drawn by its partner
+    if(b.paired && !b.pairEnd) return; // second cell of a pair -- drawn by its partner
     const isPair=!!b.pairEnd;
     const x=isPair?Math.min(b.x,b.pairEnd.x)*CS+1:b.x*CS+1;
     const y=isPair?Math.min(b.y,b.pairEnd.y)*CS+1:b.y*CS+1;
@@ -746,10 +746,10 @@ function drawGem(g,now) {
         }
         // Outer glow
         const grd=ctx.createRadialGradient(0,0,0,0,0,r*2.8);
-        grd.addColorStop(0,`hsla(${hue},100%,65%,0.35)`); grd.addColorStop(1,`hsla(${hue},100%,65%,0)`);
+        grd.addColorStop(0,`hsla(${hue},100%,65%,0.22)`); grd.addColorStop(1,`hsla(${hue},100%,65%,0)`);
         ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(0,0,r*2.8,0,Math.PI*2); ctx.fill();
         // Diamond
-        ctx.shadowColor=`hsl(${hue},100%,70%)`; ctx.shadowBlur=20;
+        ctx.shadowColor=`hsl(${hue},100%,70%)`; ctx.shadowBlur=12;
         ctx.fillStyle=`hsl(${hue},100%,65%)`;
         ctx.beginPath(); ctx.moveTo(0,-r*1.1); ctx.lineTo(r*0.7,0); ctx.lineTo(0,r*1.1); ctx.lineTo(-r*0.7,0); ctx.closePath(); ctx.fill();
         ctx.fillStyle='rgba(255,255,255,0.5)';
@@ -906,17 +906,17 @@ function drawSplash(now) {
     ctx.drawImage(_scanCanvas, 0, 0);
 
     // Title block: identical to drawMenu
-    ctx.shadowColor = '#7fff7f'; ctx.shadowBlur = 28;
+    ctx.shadowColor = '#7fff7f'; ctx.shadowBlur = 38;
     ct('S N A K E', CW/2, 78, '#7fff7f', 40);
     ctx.shadowBlur = 0;
-    ct('F O K   E D I T I O N', CW/2, 122, '#4a7a4a', 8);
+    ctx.shadowColor='#4a7a4a'; ctx.shadowBlur=1; ct('F O K   E D I T I O N', CW/2, 122, '#4a7a4a', 8); ctx.shadowBlur=0;
 
     // Coin drop animation
-    // Cycle order: dark lead | DROP fall | ENTER slot entry | INSERT COIN blink | dark tail (1 frame)
-    const DARK_LEAD = 0.5, DROP = 1.4, ENTER = 0.28, DARK_TAIL = 0.017;
+    // Cycle order: dark lead | DROP fall | ENTER slot entry | INSERT COIN blink | dark tail
+    const DARK_LEAD = 1.0, DROP = 1.5, ENTER = 0.4, DARK_TAIL = 0.1;
     const CYCLE = DARK_LEAD + DROP + ENTER + 1.0 + DARK_TAIL;
     const t = elapsed % CYCLE;
-    const coinX = CW/2, slotY = 292, startY = 152;
+    const coinX = CW/2, slotY = 292, startY = 162;
 
     const T_DROP  = DARK_LEAD;
     const T_ENTER = DARK_LEAD + DROP;
@@ -935,82 +935,102 @@ function drawSplash(now) {
         showCoin = true;
         if (dropT < DROP) {
             const p = dropT / DROP;
-            coinY = startY + (slotY - startY - 18) * p * p * p;
+            coinY = startY + (slotY - startY - 14) * p * p * p * p * p;
         } else {
             const p = (dropT - DROP) / ENTER;
-            coinY = (slotY - 18) + 18 * p;
+            coinY = (slotY - 14) + 28 * p;
         }
     }
 
-    // Slot housing always drawn (44px opening, wider than coin face = 36px)
-    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(coinX - 46, slotY - 9, 92, 18);
-    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(coinX - 42, slotY - 6, 84, 12);
-    ctx.fillStyle = '#111';    ctx.fillRect(coinX - 22, slotY - 5, 44, 10);
+    // Slot housing always drawn; pixelated sparks fly out when coin enters
+    const slotFlashF = (t >= T_ENTER && t < T_ENTER + 0.4) ? 1 - (t - T_ENTER) / 0.4 : 0;
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(coinX - 32, slotY - 9, 64, 18);
+    ctx.fillStyle = '#2a2a2a'; ctx.fillRect(coinX - 26, slotY - 6, 52, 12);
+    ctx.fillStyle = '#111'; ctx.fillRect(coinX - 16, slotY - 2, 32, 4);
+    if (slotFlashF > 0) {
+        // Sparks: [dx, dy, speed, fadeScale] - burst from slot edge, gravity pulls down
+        const sparkDefs = [
+            [-0.55,-1,72,1],   [0,-1,80,1],      [0.55,-1,72,1],
+            [-1.1,-0.85,58,1], [1.1,-0.85,58,1],
+            [-0.25,-1,95,1],   [0.25,-1,95,1],
+            [-1.4,-0.45,44,1], [1.4,-0.45,44,1],
+            [-0.8,-0.65,65,1], [0.8,-0.65,65,1],
+            [0,-0.75,108,1],
+            [-0.4,-0.9,118,0.7],[0.4,-0.9,118,0.7],
+            [-1.6,-0.2,38,0.8], [1.6,-0.2,38,0.8],
+            [-0.15,-1,135,0.5], [0.15,-1,135,0.5],
+            [-1.0,-1.0,50,0.9], [1.0,-1.0,50,0.9],
+            [-0.7,-0.3,30,0.7], [0.7,-0.3,30,0.7],
+        ];
+        const sparkCols = ['#ffd700','#ffcc00','#ffff66','#ff9900','#fff5a0','#ffaa00'];
+        const grav = 55, sp = 1 - slotFlashF;
+        ctx.save();
+        sparkDefs.forEach(([dx,dy,spd,fade],i) => {
+            const sx = coinX + dx*spd*sp;
+            const sy = slotY  + dy*spd*sp + grav*sp*sp;
+            ctx.globalAlpha = Math.pow(slotFlashF, fade);
+            ctx.fillStyle = sparkCols[i % sparkCols.length];
+            ctx.fillRect(Math.round(sx/2)*2, Math.round(sy/2)*2, 2, 2);
+        });
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
 
     if (showCoin) {
         ctx.save();
         if (t >= T_ENTER) { ctx.beginPath(); ctx.rect(0, 0, CW, slotY); ctx.clip(); }
+        // shadow
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.beginPath(); ctx.ellipse(coinX+3, coinY+5, 18*scaleX, 5, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(coinX+2, coinY+4, 14*scaleX, 4, 0, 0, Math.PI*2); ctx.fill();
         ctx.translate(coinX, coinY);
         ctx.scale(scaleX, 1);
-        const coinFace = Math.cos(spinAngle) >= 0 ? COIN_ONE : COIN_STAR;
-        const hlCol = 5.5 + (Math.cos(spinAngle) < 0 ? -1 : 1) * 5 * Math.sin(spinAngle);
-        const faceOn = Math.abs(Math.cos(spinAngle));
-        coinFace.forEach((row, ry) => row.forEach((p, rx) => {
-            if (!p) return;
-            const edgeDark = 1 - 0.32 * Math.hypot((rx-5.5)/5.5, (ry-5.5)/5.5);
-            const gd = rx - hlCol;
-            const glare = faceOn * 0.7 * Math.exp(-gd*gd / 5);
-            let r, g, b;
-            if (p === 1) {
-                r=(168+55*glare)*edgeDark; g=(118+38*glare)*edgeDark; b=(6+16*glare)*edgeDark;
-            } else if (p === 2) {
-                r=Math.min(255,(205+50*glare)*edgeDark); g=Math.min(255,(145+70*glare)*edgeDark); b=Math.min(255,(8+22*glare)*edgeDark);
-            } else {
-                r=Math.min(255,255*edgeDark+8*glare); g=Math.min(255,(220+35*glare)*edgeDark); b=Math.min(255,(52+48*glare)*edgeDark);
-            }
-            ctx.fillStyle=`rgb(${r|0},${g|0},${b|0})`;
-            ctx.fillRect(-18 + rx*3, -18 + ry*3, 3, 3);
-        }));
+        // bright gold outer rim
+        ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2);
+        ctx.fillStyle = '#FFD000'; ctx.fill();
+        // dark shadow ring
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2);
+        ctx.fillStyle = '#1C0600'; ctx.fill();
+        // gold face with radial gradient (bright centre, darker edge)
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 11);
+        grad.addColorStop(0,   '#FFE870');
+        grad.addColorStop(0.5, '#FFB800');
+        grad.addColorStop(1,   '#A06000');
+        ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI*2);
+        ctx.fillStyle = grad; ctx.fill();
+        // pixelated symbol centred on face
+        const sym = Math.cos(spinAngle) >= 0 ? SYM_ONE : SYM_YEN;
+        ctx.fillStyle = '#1C0600';
+        sym.px.forEach(([ix,iy]) => ctx.fillRect(ix*2 - sym.w, iy*2 - sym.h, 2, 2));
         ctx.restore();
     }
 
-    // Golden flash on insert — only during ENTER phase
-    if (t >= T_ENTER && t < T_ENTER + 0.4) {
-        const f = 1 - (t - T_ENTER) / 0.4;
-        ctx.fillStyle = `rgba(255,215,0,${f * 0.32})`;
-        ctx.fillRect(coinX - 46, slotY - 28, 92, 56);
-    }
 
-    // INSERT COIN blinking — hidden during dark lead and dark tail, blinks throughout the rest
-    if (t >= DARK_LEAD && t < T_TAIL) {
-        if (Math.floor((t - DARK_LEAD) * 1.5) % 2 === 0) {
-            ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 18;
-            ct('INSERT COIN', CW/2, 344, '#ffff00', 14);
-            ctx.shadowBlur = 0;
-        }
+    // INSERT COIN blinking at 0.5Hz (1s on / 1s off)
+    if (Math.floor(t) % 2 === 1) {
+        ctx.shadowColor = '#ffff00'; ctx.shadowBlur = 12;
+        ct('INSERT COIN', CW/2, 344, '#ffff00', 14);
+        ctx.shadowBlur = 0;
     }
 
     // Bottom hint: matches menu bottom bar style
     ctx.save();
     ctx.font = '8px "Press Start 2P"'; ctx.textBaseline = 'bottom'; ctx.textAlign = 'center';
-    ctx.fillStyle = '#555';
-    ctx.fillText('enter  |  tap  |  click', CW/2, CH - 8);
+    ctx.fillStyle = '#555'; ctx.shadowColor='#555'; ctx.shadowBlur=1;
+    ctx.fillText('enter  |  tap  |  click', CW/2, CH - 8); ctx.shadowBlur=0;
     ctx.restore();
 }
 
 function drawMenu() {
     drawGrid();
     ctx.drawImage(_scanCanvas, 0, 0);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=28;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=38;
     ct('S N A K E',CW/2,78,'#7fff7f',40);
     ctx.shadowBlur=0;
     ct('F O K   E D I T I O N',CW/2,122,'#4a7a4a',8);
     const msp=MENU_ITEMS.length<=5?38:30;
     MENU_ITEMS.forEach((item,i)=>menuItem(item,162+i*msp,i===menuSel));
-    ct(`DIFF: ${DIFF[cfg.diff].label}  |  AUDIO: ${cfg.music?'ON':'OFF'}  |  STYLE: ${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,342,'#555',8);
-    // Bottom bar: version left, hint center, FOKoins right — all same font as FOK EDITION
+    ctx.shadowColor='#555'; ctx.shadowBlur=1; ct(`DIFF: ${DIFF[cfg.diff].label}  |  AUDIO: ${cfg.music?'ON':'OFF'}  |  STYLE: ${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,342,'#555',8); ctx.shadowBlur=0;
+    // Bottom bar: version left, hint center, FOKoins right -- all same font as FOK EDITION
     const coins=_cachedFOKoins;
     ctx.save();
     ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
@@ -1025,7 +1045,7 @@ function drawMenu() {
 
 function drawSettings() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20; ct('SETTINGS',CW/2,24,'#7fff7f',18); ctx.shadowBlur=0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16; ct('SETTINGS',CW/2,24,'#7fff7f',18); ctx.shadowBlur=0;
     const sc=SNAKE_COLORS[cfg.snakeColor||0];
     const vol=Math.round((cfg.volume??1)*10);
     const sfxv=Math.round((cfg.sfxVol??0.5)*10);
@@ -1112,7 +1132,7 @@ function drawScoreHead(cx, cy, colorIdx, si) {
 let _scoreboardCache = null;
 function drawScores() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20; ct('HIGH SCORES',CW/2,28,'#7fff7f',18); ctx.shadowBlur=0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16; ct('HIGH SCORES',CW/2,28,'#7fff7f',18); ctx.shadowBlur=0;
     const scores=_scoreboardCache||[];
     if(!scores.length){ ct('No scores yet!',CW/2,CH/2,'#aaa',8); }
     else {
@@ -1127,12 +1147,12 @@ function drawScores() {
             const tw=ctx.measureText(line).width;
             const tx=CW/2-tw/2;
             ctx.fillText(line,tx,y);
-            drawScoreHead(tx-18, y, s.color||0, s.shopItems||{});
+            drawScoreHead(tx+tw+18, y, s.color||0, s.shopItems||{});
         });
         ctx.textAlign='center';
     }
     const coins=_cachedFOKoins;
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=3;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
     ct(`TOTAL FOKOINS: ${coins.toLocaleString()}`,CW/2,CH-36,'#ffd700',8);
     ctx.shadowBlur=0;
     ct('Any key or OK to return',CW/2,CH-14,'#999',8);
@@ -1146,11 +1166,11 @@ function drawAchievements() {
     const onExpert=expert&&achPage===0;
     const list=onExpert?EXPERT_ACHIEVEMENTS:ACHIEVEMENTS;
     const titleColor=onExpert?'#ff8800':'#7fff7f';
-    ctx.shadowColor=titleColor; ctx.shadowBlur=20; ct('ACHIEVEMENTS',CW/2,28,titleColor,18); ctx.shadowBlur=0;
+    ctx.shadowColor=titleColor; ctx.shadowBlur=16; ct('ACHIEVEMENTS',CW/2,28,titleColor,18); ctx.shadowBlur=0;
     if(expert){
         ct(onExpert?'< EXPERT  1/2 >':'< BASE  2/2 >',CW/2,42,onExpert?'#ffaa44':'#7fff7f',8);
     } else if(allBase&&!donated){
-        ct('DONATE in SHOP to unlock EXPERT page',CW/2,42,'#ff4488',7);
+        ct('DONATE in SHOP to unlock EXPERT page',CW/2,42,'#ff4488',8);
     }
     const cols=3, aw=188, ah=68, gx=4, gy=4;
     const ox=(CW-(cols*aw+(cols-1)*gx))/2;
@@ -1212,7 +1232,7 @@ function drawAchPopups(now) {
         ctx.fillStyle='#071407'; rr(px,py,pw,ph,5); ctx.fill();
         ctx.strokeStyle='#4aaa4a'; ctx.lineWidth=1.5; rr(px,py,pw,ph,5); ctx.stroke();
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=6;
-        ctx.fillStyle='#7fff7f'; ctx.font='7px "Press Start 2P"';
+        ctx.fillStyle='#7fff7f'; ctx.font='8px "Press Start 2P"';
         ctx.textAlign='left'; ctx.textBaseline='top';
         ctx.fillText('ACHIEVEMENT!',px+28,py+7);
         ctx.shadowBlur=0;
@@ -1220,7 +1240,7 @@ function drawAchPopups(now) {
         ctx.fillText(a.name,px+28,py+20);
         ctx.fillStyle='#ffd700'; ctx.font='6px "Press Start 2P"';
         ctx.fillText('+1,000 FK',px+28,py+31);
-        drawPixelIcon(px+5,py+ph/2-8,a.icon,1.5);
+        drawPixelIcon(px+5,py+ph/2-8,a.icon,2);
         ctx.restore();
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1228,7 +1248,7 @@ function drawAchPopups(now) {
 
 function drawShop() {
     drawGrid(); drawOvBg(0.92);
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=20; ct('SHOP',CW/2,28,'#ffd700',18); ctx.shadowBlur=0;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=16; ct('SHOP',CW/2,28,'#ffd700',18); ctx.shadowBlur=0;
     const coins=_cachedFOKoins, si=cfg.shopItems||{}, wi=cfg.wornItems||{};
     const startY=50, rowH=44;
     SHOP_ITEMS.forEach((item,i)=>{
@@ -1274,7 +1294,7 @@ function drawShop() {
     ctx.fillStyle='rgba(10,10,10,0.15)'; rr(8,emptyY,CW-16,rowH-4,5); ctx.fill();
     ctx.strokeStyle='#1c1c1c'; ctx.lineWidth=1; rr(8,emptyY,CW-16,rowH-4,5); ctx.stroke();
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.shadowColor='#ffd700'; ctx.shadowBlur=2;
+    ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
     ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',8);
     ctx.shadowBlur=0;
     ct('ENTER buy  |  SPACE wear/remove  |  ESC back',CW/2,CH-12,'#888',8);
@@ -1293,8 +1313,8 @@ function drawShop() {
     if(purchaseAnimAt>0&&buyAge<1600){
         const a=buyAge<180?buyAge/180:buyAge>1200?1-(buyAge-1200)/400:1;
         ctx.save();ctx.globalAlpha=a;
-        ctx.shadowColor='#7fff7f';ctx.shadowBlur=22;
-        ct('PURCHASED!',CW/2,CH/2+20,'#7fff7f',30);
+        ctx.shadowColor='#7fff7f';ctx.shadowBlur=16;
+        ct('PURCHASED!',CW/2,CH/2+20,'#7fff7f',18);
         ctx.restore();
     }
 }
@@ -1309,8 +1329,8 @@ function drawCredits() {
         if (y > -50 && y < CH + 20) {
             switch (type) {
                 case 'title':
-                    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=22;
-                    ct(val, CW/2, y+15, '#7fff7f', 20); ctx.shadowBlur=0; break;
+                    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16;
+                    ct(val, CW/2, y+15, '#7fff7f', 18); ctx.shadowBlur=0; break;
                 case 'sub':
                     ct(val, CW/2, y+7, '#5a8a5a', 8); break;
                 case 'hdr':
@@ -1321,7 +1341,7 @@ function drawCredits() {
                 case 'sml':
                     ct(val, CW/2, y+6, '#999', 8); break;
                 case 'coins':
-                    ctx.shadowColor='#ffd700'; ctx.shadowBlur=3;
+                    ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
                     ct(`YOUR FOKOINS: ${_cachedFOKoins.toLocaleString()}`, CW/2, y+9, '#ffd700', 8);
                     ctx.shadowBlur=0; break;
                 case 'secret':
@@ -1346,7 +1366,7 @@ function drawNameEntry(now) {
     if(snake) drawSnake(false);
     drawOvBg(0.84);
     const isWin=nameReason==='win';
-    ctx.shadowColor=isWin?'#ffd700':'#ff5555'; ctx.shadowBlur=22;
+    ctx.shadowColor=isWin?'#ffd700':'#ff5555'; ctx.shadowBlur=24;
     ct(isWin?'YOU WIN!':'GAME OVER',CW/2,60,isWin?'#ffd700':'#ff5555',26); ctx.shadowBlur=0;
     ct(`SCORE: ${score}   LEVEL: ${level}`,CW/2,100,'#aaa',8);
     ct('ENTER YOUR NAME:',CW/2,128,'#7fff7f',8);
@@ -1355,20 +1375,36 @@ function drawNameEntry(now) {
         const sx=sx0+i*(sw+gap),act=i===nameStr.length&&nameStr.length<MAX_NAME,has=i<nameStr.length;
         ctx.fillStyle=act?'#142014':'#0d0d18'; ctx.strokeStyle=act?'#7fff7f':'#2a2a3a'; ctx.lineWidth=act?1.5:1;
         rr(sx,sy,sw,sh,3); ctx.fill(); ctx.stroke();
-        if(has){ ct(nameStr[i],sx+sw/2,sy+sh/2,'#7fff7f',14); }
+        if(has){ ctx.shadowColor='#7fff7f'; ctx.shadowBlur=1; ct(nameStr[i],sx+sw/2,sy+sh/2,'#7fff7f',14); ctx.shadowBlur=0; }
         else if(act){
             ctx.globalAlpha=0.42; ct(NAME_CHARS[nameCharIdx]===' '?'_':NAME_CHARS[nameCharIdx],sx+sw/2,sy+sh/2,'#7fff7f',14); ctx.globalAlpha=1;
             if(Math.floor(now/400)%2===0){ctx.fillStyle='#7fff7f55';ctx.fillRect(sx+5,sy+sh-6,sw-10,2);}
         }
     }
-    const cy2=sy+sh+20,ci=nameCharIdx,disp=c=>c===' '?'_':c;
+    const selY=sy+sh+90,ci=nameCharIdx,disp=c=>c===' '?'_':c;
     if(nameStr.length<MAX_NAME){
-        ct('(^)',CW/2,cy2,'#888',8);
-        ct(disp(NAME_CHARS[(ci-1+NAME_CHARS.length)%NAME_CHARS.length]),CW/2,cy2+14,'#999',8);
-        ctx.shadowColor='#7fff7f'; ctx.shadowBlur=10;
-        ct(disp(NAME_CHARS[ci]),CW/2,cy2+28,'#7fff7f',14); ctx.shadowBlur=0;
-        ct(disp(NAME_CHARS[(ci+1)%NAME_CHARS.length]),CW/2,cy2+38,'#999',8);
-        ct('(v)',CW/2,cy2+50,'#888',8);
+        // selection highlight box
+        ctx.fillStyle='#0d1e0d'; rr(CW/2-20,selY-12,40,22,3); ctx.fill();
+        ctx.strokeStyle='#2a5a2a'; ctx.lineWidth=1; rr(CW/2-20,selY-12,40,22,3); ctx.stroke();
+        // 5-item wheel: d = -2..+2
+        for(let d=-2;d<=2;d++){
+            const idx=(ci+d+NAME_CHARS.length)%NAME_CHARS.length;
+            const ch=disp(NAME_CHARS[idx]);
+            const y=selY+d*22;
+            if(d===0){
+                ctx.shadowColor='#7fff7f'; ctx.shadowBlur=12;
+                ct(ch,CW/2,y,'#7fff7f',14); ctx.shadowBlur=0;
+            } else {
+                ctx.globalAlpha=Math.abs(d)===2?0.35:0.75;
+                ct(ch,CW/2,y,Math.abs(d)===1?'#888':'#555',8);
+                ctx.globalAlpha=1;
+            }
+        }
+        // up/down scroll arrows (filled triangles)
+        ctx.fillStyle='rgba(127,255,127,0.45)';
+        const ax=CW/2, uay=selY-2*22-18, day=selY+2*22+18;
+        ctx.beginPath(); ctx.moveTo(ax,uay-5); ctx.lineTo(ax-6,uay+3); ctx.lineTo(ax+6,uay+3); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(ax,day+5); ctx.lineTo(ax-6,day-3); ctx.lineTo(ax+6,day-3); ctx.closePath(); ctx.fill();
     }
     ct('TAP to type  |  UP/DOWN+RIGHT  |  ENTER',CW/2,CH-10,'#999',8);
 }
@@ -1388,21 +1424,22 @@ function drawGameBoard(now) {
             p.life++; p.x+=p.vx; p.y+=p.vy; p.vy+=0.055; p.vx*=0.97;
             if(p.life>=p.maxLife) return false;
             const a=(1-p.life/p.maxLife)*0.92;
-            ctx.globalAlpha=a; ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=6;
-            ctx.beginPath(); ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fill();
+            const px=Math.round(p.x/2)*2, py=Math.round(p.y/2)*2;
+            ctx.globalAlpha=a; ctx.fillStyle=p.color;
+            ctx.fillRect(px,py,2,2);
             return true;
         });
         ctx.globalAlpha=1; ctx.shadowBlur=0;
     }
     if(phase==='levelDone'){
         const a=Math.min(1,(now-phaseAt)/150);
-        ctx.save(); ctx.globalAlpha=a; ctx.shadowColor='#7fff7f'; ctx.shadowBlur=30;
-        ct('LEVEL COMPLETE!',CW/2,levelWasPerfect?CH/2-36:CH/2-18,'#7fff7f',22); ctx.restore();
+        ctx.save(); ctx.globalAlpha=a; ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16;
+        ct('LEVEL COMPLETE!',CW/2,levelWasPerfect?CH/2-36:CH/2-18,'#7fff7f',18); ctx.restore();
         if(levelWasPerfect){
             const pa=Math.min(1,(now-phaseAt-180)/200);
             if(pa>0){
                 ctx.save(); ctx.globalAlpha=pa;
-                ctx.shadowColor='#ffd700'; ctx.shadowBlur=22;
+                ctx.shadowColor='#ffd700'; ctx.shadowBlur=12;
                 ct('PERFECT LEVEL!',CW/2,CH/2+2,'#ffd700',14);
                 ctx.shadowBlur=0;
                 ct(`+${(level*1000).toLocaleString()} BONUS`,CW/2,CH/2+22,'#ffaa00',8);
@@ -1418,24 +1455,27 @@ function drawGameBoard(now) {
         const t=now-phaseAt, goPhase=t>=READY_DUR;
         drawOvBg(0.72);
         if(!goPhase){
-            ctx.shadowColor='#7fff7f'; ctx.shadowBlur=20;
+            ctx.shadowColor='#7fff7f'; ctx.shadowBlur=16;
             ct(`LEVEL ${level}`,CW/2,CH/2-18,'#7fff7f',18); ctx.shadowBlur=0;
+            ctx.shadowColor='#aaa'; ctx.shadowBlur=12;
             ct('GET READY',CW/2,CH/2+38,'#aaa',14);
         } else {
             const a=Math.min(1,(t-READY_DUR)/80);
-            ctx.save(); ctx.globalAlpha=a; ctx.shadowColor='#ffff44'; ctx.shadowBlur=30;
-            ct('GO!',CW/2,CH/2+10,'#ffff44',28); ctx.shadowBlur=0; ctx.restore();
+            ctx.save(); ctx.globalAlpha=a; ctx.shadowColor='#ffff44'; ctx.shadowBlur=24;
+            ct('GO!',CW/2,CH/2+10,'#ffff44',26); ctx.shadowBlur=0; ctx.restore();
         }
     }
     if(dying){
         const t=(now-phaseAt)/DEATH_DUR;
-        ctx.save(); ctx.globalAlpha=Math.min(1,t*2.5); ctx.shadowColor='#ff4444'; ctx.shadowBlur=20;
-        ct(deathMsg,CW/2,CH/2,'#ff5555',16); ctx.restore();
+        ctx.save(); ctx.globalAlpha=Math.min(1,t*2.5); ctx.shadowColor='#ff4444';
+        if(lives===0){ctx.shadowBlur=24;ct(deathMsg,CW/2,CH/2,'#ff5555',26);}
+        else{ctx.shadowBlur=16;ct(deathMsg,CW/2,CH/2,'#ff5555',18);}
+        ctx.restore();
     }
     if(phase==='paused'){
         drawOvBg(0.55);
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=24;
-        ct('PAUSED',CW/2,CH/2+10,'#7fff7f',28); ctx.shadowBlur=0;
+        ct('PAUSED',CW/2,CH/2+10,'#7fff7f',26); ctx.shadowBlur=0;
         ctx.save(); ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
         ctx.fillStyle='#4a7a4a'; ctx.fillText('SPACE / PSE to resume   ESC to quit menu',CW/2,CH-8); ctx.restore();
     }
@@ -1446,9 +1486,9 @@ function drawGameBoard(now) {
         const a=1-bonusAge/flashDur;
         const isEpic=bonusLabel.startsWith('EPIC'),isLucky=bonusLabel.startsWith('LUCKY');
         const col=isEpic?`hsl(${(now/6)%360},100%,70%)`:'#ffd700';
-        const sz=isEpic?22:16;
+        const sz=isEpic?26:14;
         ctx.save(); ctx.globalAlpha=a;
-        ctx.shadowColor=col; ctx.shadowBlur=isEpic?40:30;
+        ctx.shadowColor=col; ctx.shadowBlur=isEpic?24:12;
         ct(bonusLabel,CW/2,CH/2-60,col,sz);
         ctx.restore();
     }
@@ -1457,13 +1497,13 @@ function drawGameBoard(now) {
 
 function drawConfirmYesNo(title, sel) {
     const YES_X=CW/2-80, NO_X=CW/2+80;
-    ctx.shadowColor='#ff9900'; ctx.shadowBlur=18;
+    ctx.shadowColor='#ff9900'; ctx.shadowBlur=16;
     ct(title,CW/2,CH/2-18,'#ff9900',18); ctx.shadowBlur=0;
     ctx.globalAlpha=sel===0?1:0.35;
-    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=sel===0?14:0;
+    ctx.shadowColor='#7fff7f'; ctx.shadowBlur=sel===0?12:1;
     ct(sel===0?'> YES <':'  YES  ',YES_X,CH/2+38,'#7fff7f',14);
     ctx.globalAlpha=sel===1?1:0.35;
-    ctx.shadowColor='#ff5555'; ctx.shadowBlur=sel===1?14:0;
+    ctx.shadowColor='#ff5555'; ctx.shadowBlur=sel===1?12:1;
     ct(sel===1?'> NO <':'  NO   ',NO_X,CH/2+38,'#ff5555',14);
     ctx.globalAlpha=1; ctx.shadowBlur=0;
     ctx.save(); ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.textAlign='center';
@@ -1481,7 +1521,8 @@ function drawQuitConfirm() {
 function drawResetConfirm() {
     drawSettings();
     drawOvBg(0.80);
-    ct('RESET ALL STATS?',CW/2,CH/2-54,'#ff5555',16);
+    ctx.shadowColor='#ff5555'; ctx.shadowBlur=12;
+    ct('RESET ALL STATS?',CW/2,CH/2-54,'#ff5555',14); ctx.shadowBlur=0;
     ctx.font='8px "Press Start 2P"'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='#888';
     ctx.fillText('scores  fokoins  achievements  shop',CW/2,CH/2-24);
@@ -1509,10 +1550,10 @@ function drawDpad(active) {
     const S=DSIZE, H=S/2;
     dpc.clearRect(0,0,S,S);
     const sectors=[
-        {key:'ArrowUp',    pts:[[H,H],[0,0],[S,0]],  lx:H,      ly:H*0.34,  label:'^'},
-        {key:'ArrowRight', pts:[[H,H],[S,0],[S,S]],  lx:H*1.65, ly:H,       label:'>'},
-        {key:'ArrowDown',  pts:[[H,H],[S,S],[0,S]],  lx:H,      ly:H*1.65,  label:'v'},
-        {key:'ArrowLeft',  pts:[[H,H],[0,S],[0,0]],  lx:H*0.35, ly:H,       label:'<'},
+        {key:'ArrowUp',    pts:[[H,H],[0,0],[S,0]],  lx:H,      ly:H*0.34,  label:'\u2191'},
+        {key:'ArrowRight', pts:[[H,H],[S,0],[S,S]],  lx:H*1.65, ly:H,       label:'\u2192'},
+        {key:'ArrowDown',  pts:[[H,H],[S,S],[0,S]],  lx:H,      ly:H*1.65,  label:'\u2193'},
+        {key:'ArrowLeft',  pts:[[H,H],[0,S],[0,0]],  lx:H*0.35, ly:H,       label:'\u2190'},
     ];
     sectors.forEach(s=>{
         const pressed=s.key===active;
@@ -1728,7 +1769,7 @@ function handleKey(key, pde) {
         if(levelDoneWaiting){
             levelDoneWaiting=false;
             if(level<MAX_LEVELS){_levelStartLen=cfg.diff===2?snake.length:0;level++;beginLevel();}
-            else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=0;nameReason='win';showHUD(false);Snd.stop();}
+            else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=nameStr.length>0?NAME_CHARS.indexOf(' '):0;nameReason='win';showHUD(false);Snd.stop();}
             if(pde)pde();
         }
     }
@@ -1759,7 +1800,7 @@ canvas.addEventListener('mousemove', ()=>{ canvas.style.cursor=''; });
 
 // Swipe/gesture control on game canvas.
 // Thresholds: first move = 30px; same dir or 90-deg turn = 40px; opposite dir = 30px.
-// Dead zone: 40-50 degrees from horizontal — diagonal motion commits nothing until
+// Dead zone: 40-50 degrees from horizontal -- diagonal motion commits nothing until
 // the finger clearly enters a direction corridor (0-40 deg = horizontal, 50-90 = vertical).
 // In the dead zone the baseline is NOT reset, so displacement keeps accumulating until
 // the angle exits into a real corridor.
@@ -1767,7 +1808,7 @@ canvas.addEventListener('mousemove', ()=>{ canvas.style.cursor=''; });
 // so deliberate re-moves after a pause feel as responsive as the first direction.
 // Splash: any pointer or touch on canvas exits splash and unlocks audio
 // Mouse/stylus only: touch devices use the touchstart handler below so that
-// leaveSplash() → Snd.resume() → init() plays a silent buffer + ac.resume() inside a trusted element touchstart,
+// leaveSplash() \\u2192 Snd.resume() \\u2192 init() plays a silent buffer + ac.resume() inside a trusted element touchstart,
 // not inside a pointerdown (which iOS Safari won't honour for AudioContext unlock).
 canvas.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch') return;
@@ -1882,7 +1923,7 @@ nameInp.addEventListener('keydown', e => {
     if (phase !== 'nameEntry') return;
     if (e.key === 'Enter') { handleKey('Enter', () => e.preventDefault()); }
     if (e.key === 'Backspace') { e.preventDefault(); if(nameStr.length>0){nameStr=nameStr.slice(0,-1);Snd.sfx('nav',cfg.music);} }
-    // Block input event for letter keys — global keydown handler already adds them
+    // Block input event for letter keys -- global keydown handler already adds them
     if (e.key.length === 1) e.preventDefault();
 });
 
@@ -1894,9 +1935,11 @@ function updateMuteBtn(){
     const on=cfg.music; muteBtn.classList.toggle('muted',!on);
     const c=_muteCvCtx;
     c.clearRect(0,0,16,16);
+    const spkHi  = ['#ccffcc','#ccffcc','#bbffbb','#7fff7f','#7fff7f','#55cc55','#3a993a','#3a993a'];
+    const spkLo  = ['#888888','#888888','#7a7a7a','#555555','#555555','#404040','#2a2a2a','#2a2a2a'];
     (on?SPEAKER_ON:SPEAKER_OFF).forEach((row,ry)=>row.forEach((p,rx)=>{
         if(!p)return;
-        c.fillStyle=(!on&&rx>=5)?'#aa3333':(on?'#7fff7f':'#555555');
+        c.fillStyle=(!on&&rx>=5)?'#aa3333':(on?spkHi[ry]:spkLo[ry]);
         c.fillRect(rx*2,ry*2,2,2);
     }));
 }
@@ -1939,7 +1982,7 @@ function loop(now) {
     }
     if(phase==='dying'&&now-phaseAt>=DEATH_DUR){
         if(lives>0)beginLevel();
-        else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=0;nameReason='over';showHUD(false);Snd.stop();}
+        else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=nameStr.length>0?NAME_CHARS.indexOf(' '):0;nameReason='over';showHUD(false);Snd.stop();}
     }
     if(phase==='levelDone'&&!levelDoneWaiting&&now-phaseAt>=LEVELDONE_DUR){
         levelDoneWaiting=true;

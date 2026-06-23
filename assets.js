@@ -5,39 +5,17 @@ const COLS = 30, ROWS = 20, CS = 20;
 const CW = COLS * CS, CH = ROWS * CS;
 const GEMS_PER_LEVEL = 10, MAX_LEVELS = 10, START_LIVES = 3;
 const HEART_PX = [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,0,0,1,0,0,0]];
-// Cone body (cols 0-3) tapers to a point at top/bottom-right.
-// ON: ) arc pair at cols 5-7. OFF: X at cols 5-7 (corners col 5&7, crossing col 6).
-const SPEAKER_ON  = [[0,0,0,1,0,0,0,0],[0,0,1,1,0,0,0,1],[1,1,1,1,0,0,1,0],[1,1,1,1,0,1,0,0],[1,1,1,1,0,1,0,0],[1,1,1,1,0,0,1,0],[0,0,1,1,0,0,0,1],[0,0,0,1,0,0,0,0]];
+// Cone body (cols 0-3). ON: stepped arcs col5=inner(2px), col6=mid(4px), col7=outer(6px). OFF: X at cols 5-7.
+const SPEAKER_ON  = [[0,0,0,1,0,0,0,0],[0,0,1,1,0,0,0,1],[1,1,1,1,0,1,0,1],[1,1,1,1,0,1,0,1],[1,1,1,1,0,1,0,1],[1,1,1,1,0,1,0,1],[0,0,1,1,0,0,0,1],[0,0,0,1,0,0,0,0]];
 const SPEAKER_OFF = [[0,0,0,1,0,0,0,0],[0,0,1,1,0,0,0,0],[1,1,1,1,0,1,0,1],[1,1,1,1,0,0,1,0],[1,1,1,1,0,0,1,0],[1,1,1,1,0,1,0,1],[0,0,1,1,0,0,0,0],[0,0,0,1,0,0,0,0]];
-// 12x12 at 3px/pixel = 36x36 total. 1=dark rim, 2=face gold, 3=embossed symbol.
-const COIN_ONE=[
-    [0,0,0,1,1,1,1,1,1,0,0,0],
-    [0,0,1,1,2,2,2,2,1,1,0,0],
-    [0,1,1,2,2,3,3,2,2,1,1,0],
-    [1,1,2,2,3,3,3,2,2,2,1,1],
-    [1,2,2,2,2,3,3,2,2,2,2,1],
-    [1,2,2,2,2,3,3,2,2,2,2,1],
-    [1,2,2,2,2,3,3,2,2,2,2,1],
-    [1,2,2,2,2,3,3,2,2,2,2,1],
-    [1,1,2,3,3,3,3,3,2,2,1,1],
-    [0,1,1,2,2,2,2,2,2,1,1,0],
-    [0,0,1,1,2,2,2,2,1,1,0,0],
-    [0,0,0,1,1,1,1,1,1,0,0,0],
-];
-const COIN_STAR=[
-    [0,0,0,1,1,1,1,1,1,0,0,0],
-    [0,0,1,1,2,2,2,2,1,1,0,0],
-    [0,1,1,2,2,3,3,2,2,1,1,0],
-    [1,1,2,2,3,3,3,3,2,2,1,1],
-    [1,2,2,2,2,3,3,2,2,2,2,1],
-    [1,2,3,3,3,3,3,3,3,3,2,1],
-    [1,2,3,3,3,3,3,3,3,3,2,1],
-    [1,2,2,2,2,3,3,2,2,2,2,1],
-    [1,1,2,2,3,3,3,3,2,2,1,1],
-    [0,1,1,2,2,3,3,2,2,1,1,0],
-    [0,0,1,1,2,2,2,2,1,1,0,0],
-    [0,0,0,1,1,1,1,1,1,0,0,0],
-];
+// Pixel art standard: CS=2 (1 artwork pixel = 2x2 screen pixels)
+// Icons (achievements, shop, speaker): 8x8 artwork -> 16x16px on screen
+// Coin: 16x16 artwork -> 32x32px on screen
+// Coin symbol pixel grids — [col, row] pairs, drawn at cs=2, centered in coin face
+// "1": 4x6 simple (angled top, no base)  (screen: 8x12px)
+const SYM_ONE = { w:4, h:6, px:[[2,0],[1,1],[2,1],[2,2],[2,3],[2,4],[2,5]] };
+// "¥": 5x7 yen  (screen: 10x14px)
+const SYM_YEN = { w:5, h:7, px:[[0,0],[4,0],[1,1],[3,1],[2,2],[0,3],[1,3],[2,3],[3,3],[4,3],[2,4],[0,5],[1,5],[2,5],[3,5],[4,5],[2,6]] };
 const DEATH_DUR = 900, LEVELDONE_DUR = 1400, READY_DUR = 1000, GO_DUR = 300;
 const MAX_NAME = 15;
 const NAME_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
@@ -131,7 +109,7 @@ const SHOP_ITEMS = [
     { id:'cylinder', name:'CYLINDER HAT',  desc:'A distinguished top hat',       price:100000,
       icon:{p:{A:'#1a1a1a',B:'#333333'},d:['........','..AAAA..','..AAAA..','..AAAA..','.BBBBBB.','........','........','........']}},
     { id:'monocle',  name:'MONOCLE',       desc:'For the refined serpent',        price:150000,
-      icon:{p:{A:'#aaaaaa',C:'#888888'},d:['..AAAA..', '.A....A.','.A....A.','.A....A.','..AAAA..','.....C..',  '....C...','...C....']}},
+      icon:{p:{H:'#d8d8d8',A:'#999999',S:'#484848',G:'#eeeeee',C:'#aaaaaa',D:'#555555'},d:['..HHAA..','.H....A.','.H.G..A.','.A....S.','..AASS..','.....CD.','....CD..','...CD...']}},
     { id:'shades',   name:'SUNGLASSES',    desc:'Too cool for the grid',          price:50000,
       icon:{p:{A:'#111111',B:'#1a3050'},d:['.AAA.AAA','ABBBABBB','ABBBABBB','.AAA.AAA','........','........','........','........']}},
     { id:'crown',    name:'ROYAL CROWN',   desc:'Fit for a snake king',           price:1000000,
