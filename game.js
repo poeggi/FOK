@@ -698,6 +698,7 @@ function step(now) {
             phase='levelDone'; phaseAt=now;
         } else spawnGem();
     } else snake.pop();
+    if (ate) snake.push({...snake[snake.length - 1]});
     updateHUD();
 }
 
