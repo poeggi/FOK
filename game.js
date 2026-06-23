@@ -1139,7 +1139,7 @@ function drawSettings() {
         'RESET STATS',
         'BACK',
     ];
-    const startY=50, rowH=28;
+    const startY=62, rowH=28;
     items.forEach((item,i)=>menuItem(item,startY+i*rowH,i===settingsSel));
     // Volume bars when selected
     if(settingsSel===2){
