@@ -23,6 +23,7 @@ Mobile: X-shaped d-pad + OK/pause/ESC side buttons. Swipe the canvas to steer. T
 |-|------|--------|------|
 | Speed | Slow | Standard | Fast |
 | Barricades | Few | Standard | Many |
+| Growth per gem | +1 | +2 | +2 |
 | Snake length at level start | Resets | Resets | Carries over from previous level |
 | Achievements | Basic only | Full | Full + Iron Snake |
 
@@ -33,7 +34,7 @@ Mobile: X-shaped d-pad + OK/pause/ESC side buttons. Swipe the canvas to steer. T
 ## Features
 
 - 10 levels - speed and barricades increase each level
-- Snake grows by 2 segments per gem collected
+- Snake grows by 1 segment per gem on Easy, 2 on Normal and Hard
 - Screen wraps on all edges
 - 3 lives - barricades and self-collision cost one life each
 - 10 gems per level; collect in fewest steps for a x2 score bonus
