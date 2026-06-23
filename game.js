@@ -26,7 +26,7 @@ const COIN_PX = [
     [0,0,0,1,1,1,1,1,1,0,0,0],
 ];
 const DEATH_DUR = 900, LEVELDONE_DUR = 1400, READY_DUR = 1000, GO_DUR = 300;
-const MAX_NAME = 8;
+const MAX_NAME = 15;
 const NAME_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
 
 const LEVEL_CFG = Array.from({ length: MAX_LEVELS }, (_, i) => ({
@@ -459,7 +459,7 @@ const CFG_KEY = 'fok-snake-cfg';
 function getScores() {
     try {
         const raw = localStorage.getItem(HS_KEY);
-        if(raw === null) return [{name:'P.SNAKE',score:42,level:1,color:0,shopItems:{},date:'26.11.97'}];
+        if(raw === null) return [{name:'SNAKE PLISSKEN',score:42,level:1,diff:1,color:0,shopItems:{},date:'26.11.97'}];
         return JSON.parse(raw) || [];
     } catch { return []; }
 }
@@ -478,8 +478,8 @@ function addScore(name, sc, lvl) {
     const s = getScores();
     const now = new Date();
     const date = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getFullYear()).slice(-2)}`;
-    s.push({ name:(name.trim()||'AAA').substring(0,MAX_NAME), score:sc, level:lvl,
-             color:cfg.snakeColor||0, shopItems:{...(cfg.wornItems||{})}, date });
+    s.push({ name:(name.trim()||'SNAKE PLISSKEN').substring(0,MAX_NAME), score:sc, level:lvl,
+             diff:cfg.diff, color:cfg.snakeColor||0, shopItems:{...(cfg.wornItems||{})}, date });
     s.sort((a, b) => b.score - a.score);
     try { localStorage.setItem(HS_KEY, JSON.stringify(s.slice(0, 10))); } catch {}
     addFOKoins(sc);
@@ -1218,7 +1218,8 @@ function drawScores() {
             ctx.fillStyle=i===0?'#ffd700':i<3?'#dddddd':'#aaaaaa';
             const rank=`${i+1}.`.padStart(3);
             const lvl=String(s.level).padStart(2);
-            const line=`${rank}  ${(s.name||'???').padEnd(MAX_NAME)}  ${String(s.score).padStart(7)}  LV${lvl}  ${s.date||'--.--.--'}`;
+            const diff=['E','N','H'][s.diff??1]??'N';
+            const line=`${rank}  ${(s.name||'???').padEnd(MAX_NAME)}  ${String(s.score).padStart(7)}  LV${lvl}  ${diff}  ${s.date||'--.--.--'}`;
             const tw=ctx.measureText(line).width;
             const tx=CW/2-tw/2;
             ctx.fillText(line,tx,y);
@@ -1787,7 +1788,7 @@ function handleKey(key, pde) {
         if(levelDoneWaiting){
             levelDoneWaiting=false;
             if(level<MAX_LEVELS){_levelStartLen=cfg.diff===2?snake.length:0;level++;beginLevel();}
-            else{phase='nameEntry';nameStr='';nameCharIdx=0;nameReason='win';showHUD(false);Snd.stop();}
+            else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=0;nameReason='win';showHUD(false);Snd.stop();}
             if(pde)pde();
         }
     }
@@ -1807,7 +1808,7 @@ function handleKey(key, pde) {
         else if(key==='Backspace'||key==='ArrowLeft'){if(nameStr.length>0){nameStr=nameStr.slice(0,-1);Snd.sfx('nav',cfg.music);}if(pde)pde();}
         else if(key.length===1&&/^[a-zA-Z0-9 ]$/.test(key)&&nameStr.length<MAX_NAME){nameStr+=key.toUpperCase();Snd.sfx('nav',cfg.music);}
         else if(key==='Enter'){
-            try { localStorage.setItem('lastSName', nameStr.trim()||'PLISSKEN'); } catch {}
+            try { localStorage.setItem('lastSName', nameStr.trim()||'SNAKE PLISSKEN'); } catch {}
             addScore(nameStr,score,level); Snd.sfx('select',cfg.music);
             _scoreboardCache=getScores(); phase='scores'; showHUD(false); setTimeout(()=>nameInp.blur(),10);
         }
@@ -1989,7 +1990,7 @@ function loop(now) {
     }
     if(phase==='dying'&&now-phaseAt>=DEATH_DUR){
         if(lives>0)beginLevel();
-        else{phase='nameEntry';nameStr='';nameCharIdx=0;nameReason='over';showHUD(false);Snd.stop();}
+        else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=0;nameReason='over';showHUD(false);Snd.stop();}
     }
     if(phase==='levelDone'&&!levelDoneWaiting&&now-phaseAt>=LEVELDONE_DUR){
         levelDoneWaiting=true;
