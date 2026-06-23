@@ -1315,6 +1315,8 @@ function drawAchPopups(now) {
         ctx.shadowBlur=0;
         ctx.fillStyle='#aaffaa'; ctx.font='7px "Press Start 2P"';
         ctx.fillText(a.name,px+28,py+20);
+        ctx.fillStyle='#ffd700'; ctx.font='6px "Press Start 2P"';
+        ctx.fillText('+1,000 FK',px+28,py+31);
         drawPixelIcon(px+5,py+ph/2-8,a.icon,1.5);
         ctx.restore();
     });
