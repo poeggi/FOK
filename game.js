@@ -1131,11 +1131,11 @@ function drawSettings() {
         'MUSIC STYLE: '+(cfg.musicStyle===0?'NEW':'CLASSIC'),
         'VOLUME: '+Math.round((cfg.volume??1)*100)+'%',
         'SFX VOL: '+Math.round((cfg.sfxVol??0.5)*100)+'%',
-        'TURBO: '+(cfg.turbo!==false?'ON':'OFF'),
+        'TURBO BOOST: '+(cfg.turbo!==false?'ON':'OFF'),
         'DIFFICULTY: '+DIFF[cfg.diff].label,
         'SNAKE COLOR: '+sc.name,
         'LAYOUT: '+(cfg.handed?'LEFT':'RIGHT'),
-        'TOUCH SELECT: '+(cfg.touchSelect?'ON':'OFF'),
+        'TOUCH AUTOSELECT: '+(cfg.touchSelect?'ON':'OFF'),
         'RESET STATS',
         'BACK',
     ];
