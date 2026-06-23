@@ -1812,7 +1812,7 @@ canvas.addEventListener('touchend',e=>{
     if(_splashTouchPending){ _splashTouchPending=false; _swipeBase=null; _swipeLastDir=null; return; }
     if(_swipeBase){
         const t=e.changedTouches[0];
-        const isTap=Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&!_swipeLastDir&&performance.now()-_swipeTouchStartAt>80;
+        const isTap=Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&!_swipeLastDir&&performance.now()-_swipeTouchStartAt>40;
         if(phase!=='playing'&&(isTap||cfg.touchSelect)) handleKey('Enter',null);
     }
     _swipeBase=null; _swipeLastDir=null; _swipeLastMovePos=null;
