@@ -1024,7 +1024,7 @@ function drawSettings() {
     const sfxv=Math.round((cfg.sfxVol??0.5)*10);
     const items = [
         'AUDIO: '+(cfg.music?'ON':'OFF'),
-        'MUSIC STYLE: '+(cfg.musicStyle===0?'NEW':'CLASSIC'),
+        'AUDIO STYLE: '+(cfg.musicStyle===0?'NEW':'CLASSIC'),
         'VOLUME: '+Math.round((cfg.volume??1)*100)+'%',
         'SFX VOL: '+Math.round((cfg.sfxVol??0.5)*100)+'%',
         'TURBO BOOST: '+(cfg.turbo!==false?'ON':'OFF'),
@@ -1990,7 +1990,7 @@ if ('caches' in window) {
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         const wasControlled = !!navigator.serviceWorker.controller;
-        navigator.serviceWorker.register('./sw.js').then(reg => {
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
             if (navigator.onLine) reg.update().catch(() => {});
         });
         let _reloading = false;
