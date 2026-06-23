@@ -1827,15 +1827,14 @@ document.addEventListener('pointerdown', () => Snd.tryResume(), {capture:true, p
 // touchstart-based ac.resume() promise silently hung (iOS WebKit quirk).
 document.addEventListener('touchend', () => Snd.tryResume(), {passive:true});
 // Pause audio when app goes to background, resume when it returns
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        if (phase === 'playing') { phase = 'paused'; pauseAt = performance.now(); Snd.pauseMusic(); }
-        Snd.suspend();
-    } else if (cfg.music) { Snd.resume(); }
-});
-window.addEventListener('blur', () => {
+function onBgHide() {
     if (phase === 'playing') { phase = 'paused'; pauseAt = performance.now(); Snd.pauseMusic(); }
-});
+    Snd.suspend();
+}
+function onBgShow() { if (cfg.music) Snd.resume(); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) onBgHide(); else onBgShow(); });
+window.addEventListener('blur', onBgHide);
+window.addEventListener('focus', onBgShow);
 document.addEventListener('keydown', e=>{
     handleKey(e.key,()=>e.preventDefault());
     if(!e.repeat&&phase==='playing'){const d=GDIRS[e.key];if(d){boostDir=d;boostSince=performance.now();boosting=false;}}
