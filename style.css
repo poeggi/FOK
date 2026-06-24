@@ -67,9 +67,9 @@ body {
         width: min(calc((100vh - 100px) * 1.5), calc(100vw - 32px), 800px);
     }
 }
-/* Portrait touch: push canvas well up to give controls breathing room */
+/* Portrait touch: align to bottom so controls sit close to thumb reach */
 @media (pointer: coarse) and (orientation: portrait) {
-    body { padding-top: 0; padding-bottom: 64px; }
+    body { min-height: 100dvh; justify-content: flex-end; padding-top: 0; padding-bottom: 64px; }
     #gamepad { margin-top: 28px; }
 }
 @media (pointer: coarse) and (orientation: landscape) {

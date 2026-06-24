@@ -1714,16 +1714,15 @@ function handleKey(key, pde) {
         if(key==='ArrowUp')  {settingsSel=(settingsSel-1+SETTINGS_COUNT)%SETTINGS_COUNT;Snd.sfx('nav',cfg.music);}
         if(key==='ArrowDown'){settingsSel=(settingsSel+1)%SETTINGS_COUNT;Snd.sfx('nav',cfg.music);}
         if(key==='Enter'){
-            Snd.sfx('select',cfg.music);
-            if(settingsSel===0){cfg.music=!cfg.music;if(!cfg.music)Snd.stop();updateMuteBtn();}
-            else if(settingsSel===1){cfg.musicStyle=(cfg.musicStyle+1)%2;Snd.stop();}
-            else if(settingsSel===4){cfg.turbo=cfg.turbo===false?true:false;}
-            else if(settingsSel===5)cfg.diff=(cfg.diff+1)%DIFF.length;
-            else if(settingsSel===6)cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;
-            else if(settingsSel===7){cfg.handed=(cfg.handed+1)%2;applyHandedness();}
-            else if(settingsSel===8){cfg.touchSelect=!cfg.touchSelect;}
+            if(settingsSel===0){cfg.music=!cfg.music;if(!cfg.music)Snd.stop();updateMuteBtn();Snd.sfx('select',cfg.music);}
+            else if(settingsSel===1){cfg.musicStyle=(cfg.musicStyle+1)%2;Snd.stop();Snd.sfx('select',cfg.music);}
+            else if(settingsSel===4){cfg.turbo=cfg.turbo===false?true:false;Snd.sfx('select',cfg.music);}
+            else if(settingsSel===5){cfg.diff=(cfg.diff+1)%DIFF.length;Snd.sfx('select',cfg.music);}
+            else if(settingsSel===6){cfg.snakeColor=(cfg.snakeColor+1)%SNAKE_COLORS.length;Snd.sfx('select',cfg.music);}
+            else if(settingsSel===7){cfg.handed=(cfg.handed+1)%2;applyHandedness();Snd.sfx('select',cfg.music);}
+            else if(settingsSel===8){cfg.touchSelect=!cfg.touchSelect;Snd.sfx('select',cfg.music);}
             else if(settingsSel===9){quitConfirmSel=1;phase='resetConfirm';return;}
-            else phase='menu';
+            else{Snd.sfx('nav',cfg.music);phase='menu';}
             saveCfg();
         }
         if(key==='ArrowLeft'||key==='ArrowRight'){
@@ -1746,13 +1745,13 @@ function handleKey(key, pde) {
     else if(phase==='credits'){
         if(key==='ArrowDown'){creditsSpeed=3.5;if(pde)pde();}
         else if(key==='ArrowUp'){creditsSpeed=0.15;if(pde)pde();}
-        else if(key==='Enter'){phase='menu';creditsSpeed=0.8;_creditsNormal=0.8;if(pde)pde();}
+        else if(key==='Enter'){Snd.sfx('nav',cfg.music);phase='menu';creditsSpeed=0.8;_creditsNormal=0.8;if(pde)pde();}
     }
-    else if(phase==='scores'){ phase='menu'; if(pde)pde(); }
+    else if(phase==='scores'){ Snd.sfx('nav',cfg.music); phase='menu'; if(pde)pde(); }
     else if(phase==='achievements'){
         const _ea=ACHIEVEMENTS.every(a=>achUnlocked[a.id]);
         if(_ea&&(key==='ArrowLeft'||key==='ArrowRight')){achPage=1-achPage;Snd.sfx('nav',cfg.music);if(pde)pde();}
-        else{phase='menu';if(pde)pde();}
+        else{Snd.sfx('nav',cfg.music);phase='menu';if(pde)pde();}
     }
     else if(phase==='shop'){
         if(key==='ArrowUp'){ shopSel=(shopSel-1+SHOP_ITEMS.length)%SHOP_ITEMS.length; Snd.sfx('nav',cfg.music); }
@@ -2018,7 +2017,7 @@ function updateMuteBtn(){
         c.fillRect(rx*2+16,ry*2,2,2);
     }));
 }
-function toggleMute(){ cfg.music=!cfg.music; if(!cfg.music)Snd.stop(); updateMuteBtn(); saveCfg(); }
+function toggleMute(){ cfg.music=!cfg.music; if(!cfg.music)Snd.stop(); else Snd.resume(); updateMuteBtn(); saveCfg(); }
 muteBtn.addEventListener('click',toggleMute);
 muteBtn.addEventListener('touchstart',e=>{e.preventDefault();toggleMute();},{passive:false});
 updateMuteBtn();
