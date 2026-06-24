@@ -115,5 +115,5 @@ body {
     body.lefty #side-info { order: 3; }
 }
 #name-inp {
-    position: fixed; left: -9999px; top: 50%; width: 1px; height: 1px; opacity: 0;
+    position: fixed; left: -9999px; top: 15%; width: 1px; height: 1px; opacity: 0;
 }

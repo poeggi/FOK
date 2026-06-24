@@ -184,15 +184,7 @@ const Snd = (() => {
         const _pb = ac.createBuffer(1, 1, 22050), _ps = ac.createBufferSource();
         _ps.buffer = _pb; _ps.connect(ac.destination); _ps.start(0);
         mGain.gain.cancelScheduledValues(ac.currentTime);
-        if (ac.state !== 'running') {
-            // AC still suspended; queue a gentle ramp so there is something
-            // scheduled when it resumes -- resume().then() will cancel and
-            // replace this with a fast setTargetAtTime if curTrack is set.
-            mGain.gain.setValueAtTime(0, ac.currentTime);
-            mGain.gain.linearRampToValueAtTime(0.32 * _vol, ac.currentTime + 1.0);
-        } else {
-            mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime, 0.08);
-        }
+        mGain.gain.setTargetAtTime(0.32 * _vol, ac.currentTime, 0.08);
     }
 
     function stop() {
