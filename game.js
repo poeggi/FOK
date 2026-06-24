@@ -176,6 +176,12 @@ const Snd = (() => {
         curTrack = t; isPaused = false;
         chState = SEQ[t].channels.map(() => ({ pos: 0, nextNote: ac.currentTime }));
         _justInited = false;
+        // Re-prime the audio pipeline each time a track starts: iOS silences the
+        // mGain output path if no audio has flowed since init(). A fresh 1-sample
+        // buffer creates the activity needed to wake it — no user gesture required
+        // since the AC is already running at this point.
+        const _pb = ac.createBuffer(1, 1, 22050), _ps = ac.createBufferSource();
+        _ps.buffer = _pb; _ps.connect(ac.destination); _ps.start(0);
         mGain.gain.cancelScheduledValues(ac.currentTime);
         if (ac.state !== 'running') {
             // AC still suspended; queue a gentle ramp so there is something
@@ -209,13 +215,6 @@ const Snd = (() => {
         mGain.gain.setTargetAtTime(0.32 * _vol, now, 0.10);
     }
 
-    // TODO: iOS Safari cold-start audio init is not fully reliable. On a fresh
-    // browser session the first ac.resume() call silently hangs even inside a
-    // trusted touchstart gesture; audio only starts on the second user interaction.
-    // The controllerchange wasControlled guard (SW registration block) reduces the
-    // problem but does not eliminate it for sessions where a SW update fires a
-    // programmatic reload. No reliable workaround found yet without a dedicated
-    // "tap to enable audio" UI step.
     function resume() {
         if (!ac) { init(); }
         if (ac && ac.state === 'suspended') {
