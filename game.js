@@ -1606,6 +1606,7 @@ function _startDpadRepeat(dir){
 
 dpadCanvas.addEventListener('touchstart',e=>{
     Snd.resume(); e.preventDefault();
+    if(phase==='nameEntry') nameInp.blur();
     dpadActive=dpadDir(e,dpadCanvas); handleKey(dpadActive,null);
     drawDpad(phase==='splash'?null:dpadActive);
     if(phase==='playing'){const d=GDIRS[dpadActive];if(d){boostDir=d;boostSince=performance.now();boosting=false;}}
@@ -1964,14 +1965,14 @@ document.addEventListener('keyup', e=>{
 });
 
 // Side buttons
-document.getElementById('btn-ok').addEventListener('touchstart',e=>{handleKey(phase==='nameEntry'?'NameAdd':'Enter',null);e.preventDefault();},{passive:false});
+document.getElementById('btn-ok').addEventListener('touchstart',e=>{if(phase==='nameEntry')nameInp.blur();handleKey(phase==='nameEntry'?'NameAdd':'Enter',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-ok').addEventListener('click',()=>handleKey(phase==='nameEntry'?'NameAdd':'Enter',null));
 document.getElementById('btn-pause').addEventListener('touchstart',e=>{handleKey(' ',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-pause').addEventListener('click',()=>handleKey(' ',null));
 document.getElementById('btn-start').addEventListener('touchstart',e=>{handleKey('Enter',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-start').addEventListener('click',()=>handleKey('Enter',null));
 document.getElementById('gamepad').classList.add('splash');
-document.getElementById('btn-esc').addEventListener('touchstart',e=>{handleKey('Escape',null);e.preventDefault();},{passive:false});
+document.getElementById('btn-esc').addEventListener('touchstart',e=>{if(phase==='nameEntry')nameInp.blur();handleKey('Escape',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escape',null));
 
 
