@@ -116,18 +116,8 @@ const Snd = (() => {
             ac = new (window.AudioContext || window.webkitAudioContext)();
             mGain = ac.createGain(); mGain.gain.value = 0; mGain.connect(ac.destination);
             sGain = ac.createGain(); sGain.gain.value = 0.58 * _sfxVol; sGain.connect(ac.destination);
-            // onstatechange fires reliably on every suspended->running transition,
-            // regardless of which ac.resume() call (first or retry) finally succeeded.
-            ac.onstatechange = () => {
-                if (ac.state !== 'running') return;
-                const wasBg = _bgSuspended; _bgSuspended = false;
-                if (!curTrack || !SEQ[curTrack] || isPaused) return;
-                // background resume: push nextNote ahead so stale queued notes don't pile up
-                const flush = wasBg ? 0.45 : 0.05;
-                chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + flush }));
-                mGain.gain.cancelScheduledValues(ac.currentTime);
-                mGain.gain.setValueAtTime(0.32 * _vol, ac.currentTime);
-            };
+            // onstatechange: backup path for browsers where resume().then() is unreliable
+            ac.onstatechange = () => { if (ac.state === 'running') _startMusic(); };
             // 1-sample silent buffer: prompts iOS to treat this context as user-gesture-unlocked
             const buf = ac.createBuffer(1, 1, 22050), src = ac.createBufferSource();
             src.buffer = buf; src.connect(ac.destination); src.start(0);
@@ -179,6 +169,17 @@ const Snd = (() => {
         });
     }
 
+    // Called whenever AC transitions to running (from onstatechange OR resume().then()).
+    // Resets chState so stale scheduled notes don't pile up, then unmutes mGain.
+    // Idempotent: safe to call from both paths on the same resume event.
+    function _startMusic() {
+        if (!ac || !curTrack || !SEQ[curTrack] || isPaused) return;
+        const flush = _bgSuspended ? 0.45 : 0.05; _bgSuspended = false;
+        chState = SEQ[curTrack].channels.map(() => ({ pos: 0, nextNote: ac.currentTime + flush }));
+        mGain.gain.cancelScheduledValues(ac.currentTime);
+        mGain.gain.setValueAtTime(0.32 * _vol, ac.currentTime);
+    }
+
     function play(t) {
         if (!ac || curTrack === t) return;
         curTrack = t; isPaused = false;
@@ -187,6 +188,7 @@ const Snd = (() => {
             mGain.gain.cancelScheduledValues(ac.currentTime);
             mGain.gain.setValueAtTime(0.32 * _vol, ac.currentTime);
         }
+        // if suspended: _startMusic() will be called by onstatechange or resume().then()
     }
 
     function stop() {
@@ -212,9 +214,10 @@ const Snd = (() => {
 
     function resume() {
         if (!ac) { init(); }
-        // iOS cold-start silently hangs the first ac.resume() call; retrying on
-        // every gesture is safe (spec-idempotent). onstatechange handles the reaction.
-        if (ac && ac.state === 'suspended') { ac.resume().catch(() => {}); }
+        // iOS cold-start silently hangs the first ac.resume() call; retrying on every
+        // gesture is safe (spec-idempotent). Both .then() and onstatechange call _startMusic
+        // so whichever fires first wins; the second call is a harmless no-op.
+        if (ac && ac.state === 'suspended') { ac.resume().then(_startMusic).catch(() => {}); }
     }
 
     function sfx(type, on) {
@@ -269,7 +272,7 @@ const Snd = (() => {
     }
     // Like resume() but never creates the AC -- safe to call from untrusted events.
     function tryResume() {
-        if (ac && ac.state === 'suspended') { ac.resume().catch(() => {}); }
+        if (ac && ac.state === 'suspended') { ac.resume().then(_startMusic).catch(() => {}); }
     }
     return { init, tick, play, stop, pauseMusic, resumeMusic, resume, tryResume, sfx, setVol, setSfxVol, suspend };
 })();
