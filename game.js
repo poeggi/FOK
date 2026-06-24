@@ -221,7 +221,7 @@ const Snd = (() => {
     }
 
     function sfx(type, on) {
-        if (!ac || !on || ac.state !== 'running') return;
+        if (!ac || !on) return;
         const now = ac.currentTime;
         const t = (f, w, d, tp) => tone(f, w, d, tp || 'square', 0.42, 0, sGain);
         if (type === 'eat') {
