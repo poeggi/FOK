@@ -359,7 +359,7 @@ function addScore(name, sc, lvl) {
     const s = getScores();
     const now = new Date();
     const date = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getFullYear()).slice(-2)}`;
-    s.push({ name:(name.trim()||'SNAKE PLISSKEN').substring(0,MAX_NAME), score:sc, level:lvl,
+    s.push({ name:name.trim().substring(0,MAX_NAME), score:sc, level:lvl,
              diff:cfg.diff, color:cfg.snakeColor||0, shopItems:{...(cfg.wornItems||{})}, date });
     s.sort((a, b) => b.score - a.score);
     try { localStorage.setItem(HS_KEY, JSON.stringify(s.slice(0, 10))); } catch {}
@@ -462,7 +462,7 @@ const BOOST_GRACE=180;
 function clearBoost(){boostDir=null;boosting=false;}
 let perfectCount = 0, luckyCount = 0;
 let achPage = 0;
-let nameStr = '', nameCharIdx = 0, nameReason = '';
+let nameStr = '', nameCharIdx = 0, nameCursorPos = 0, nameReason = '';
 let creditsScroll = 0, creditsSpeed = 0.8;
 let purchaseParticles = [], purchaseAnimAt = 0;
 let fpsFrames = 0, fpsLast = 0;
@@ -1380,17 +1380,17 @@ function drawNameEntry(now) {
     ct('ENTER YOUR NAME:',CW/2,128,'#7fff7f',8);
     const sw=30,sh=40,gap=5,totalW=MAX_NAME*(sw+gap)-gap,sx0=Math.floor(CW/2-totalW/2),sy=146;
     for(let i=0;i<MAX_NAME;i++){
-        const sx=sx0+i*(sw+gap),act=i===nameStr.length&&nameStr.length<MAX_NAME,has=i<nameStr.length;
+        const sx=sx0+i*(sw+gap),act=i===nameCursorPos,has=i<nameStr.length&&!act;
         ctx.fillStyle=act?'#142014':'#0d0d18'; ctx.strokeStyle=act?'#7fff7f':'#2a2a3a'; ctx.lineWidth=act?1.5:1;
         rr(sx,sy,sw,sh,3); ctx.fill(); ctx.stroke();
-        if(has){ ctx.shadowColor='#7fff7f'; ctx.shadowBlur=1; ct(nameStr[i],sx+sw/2,sy+sh/2,'#7fff7f',14); ctx.shadowBlur=0; }
+        if(has){ ctx.shadowColor='#7fff7f'; ctx.shadowBlur=1; ct(nameStr[i]===' '?'-':nameStr[i],sx+sw/2,sy+sh/2,'#7fff7f',14); ctx.shadowBlur=0; }
         else if(act){
-            ctx.globalAlpha=0.42; ct(NAME_CHARS[nameCharIdx]===' '?'_':NAME_CHARS[nameCharIdx],sx+sw/2,sy+sh/2,'#7fff7f',14); ctx.globalAlpha=1;
+            const gc=NAME_CHARS[nameCharIdx]; ctx.globalAlpha=0.42; ct(gc===' '?'-':gc,sx+sw/2,sy+sh/2,'#7fff7f',14); ctx.globalAlpha=1;
             if(Math.floor(now/400)%2===0){ctx.fillStyle='#7fff7f55';ctx.fillRect(sx+5,sy+sh-6,sw-10,2);}
         }
     }
-    const selY=sy+sh+90,ci=nameCharIdx,disp=c=>c===' '?'_':c;
-    if(nameStr.length<MAX_NAME){
+    const selY=sy+sh+90,ci=nameCharIdx,disp=c=>c===' '?'-':c==='\r'?'<-':c;
+    {
         // selection highlight box
         ctx.fillStyle='#0d1e0d'; rr(CW/2-20,selY-12,40,22,3); ctx.fill();
         ctx.strokeStyle='#2a5a2a'; ctx.lineWidth=1; rr(CW/2-20,selY-12,40,22,3); ctx.stroke();
@@ -1414,7 +1414,7 @@ function drawNameEntry(now) {
         ctx.beginPath(); ctx.moveTo(ax,uay-5); ctx.lineTo(ax-6,uay+3); ctx.lineTo(ax+6,uay+3); ctx.closePath(); ctx.fill();
         ctx.beginPath(); ctx.moveTo(ax,day+5); ctx.lineTo(ax-6,day-3); ctx.lineTo(ax+6,day-3); ctx.closePath(); ctx.fill();
     }
-    ct('TAP to type  |  UP/DOWN+RIGHT  |  ENTER',CW/2,CH-10,'#999',8);
+    ct('TYPE  |  UP/DN+OK=add  |  LR=move  ESC=del  ENTER',CW/2,CH-10,'#999',8);
 }
 
 function drawGameBoard(now) {
@@ -1655,11 +1655,14 @@ function handleKey(key, pde) {
     // Space = pause toggle (playing/paused only)
     if(key===' '){
         if(phase==='playing'||phase==='paused'){ togglePause(); if(pde)pde(); return; }
-        if(phase==='menu'){ Snd.sfx('select',cfg.music); startGame(); if(pde)pde(); return; }
     }
 
     // Escape = quit confirm in-game, or back in menus
     if(key==='Escape'){
+        if(phase==='nameEntry'){
+            if(nameCursorPos>0){nameStr=nameStr.slice(0,nameCursorPos-1)+nameStr.slice(nameCursorPos);nameCursorPos--;if(nameCursorPos<nameStr.length){const ci=NAME_CHARS.indexOf(nameStr[nameCursorPos]);if(ci>=0)nameCharIdx=ci;}Snd.sfx('nav',cfg.music);}
+            if(pde)pde(); return;
+        }
         if(phase==='playing'||phase==='paused'){
             if(performance.now() < escReadyAt) return;
             prevPhase=phase; quitConfirmSel=1;
@@ -1783,7 +1786,7 @@ function handleKey(key, pde) {
         if(levelDoneWaiting){
             levelDoneWaiting=false;
             if(level<MAX_LEVELS){_levelStartLen=cfg.diff===2?snake.length:0;level++;beginLevel();}
-            else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=nameStr.length>0?NAME_CHARS.indexOf(' '):0;nameReason='win';showHUD(false);Snd.stop();}
+            else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=nameStr.length>0?NAME_CHARS.indexOf(' '):0;nameCursorPos=nameStr.length;nameReason='win';showHUD(false);Snd.stop();}
             if(pde)pde();
         }
     }
@@ -1799,11 +1802,36 @@ function handleKey(key, pde) {
         if(GDIRS[key]&&pde)pde();
         if(key==='ArrowUp')  {nameCharIdx=(nameCharIdx-1+NAME_CHARS.length)%NAME_CHARS.length;Snd.sfx('nav',cfg.music);}
         else if(key==='ArrowDown'){nameCharIdx=(nameCharIdx+1)%NAME_CHARS.length;Snd.sfx('nav',cfg.music);}
-        else if(key==='ArrowRight'){if(nameStr.length<MAX_NAME){nameStr+=NAME_CHARS[nameCharIdx];Snd.sfx('nav',cfg.music);}}
-        else if(key==='Backspace'||key==='ArrowLeft'){if(nameStr.length>0){nameStr=nameStr.slice(0,-1);Snd.sfx('nav',cfg.music);}if(pde)pde();}
-        else if(key.length===1&&/^[a-zA-Z0-9 ]$/.test(key)&&nameStr.length<MAX_NAME){nameStr+=key.toUpperCase();Snd.sfx('nav',cfg.music);}
+        else if(key==='ArrowLeft'){
+            if(nameCursorPos>0){nameCursorPos--;if(nameCursorPos<nameStr.length){const ci=NAME_CHARS.indexOf(nameStr[nameCursorPos]);if(ci>=0)nameCharIdx=ci;}Snd.sfx('nav',cfg.music);}
+        }
+        else if(key==='ArrowRight'){
+            if(nameCursorPos<nameStr.length){nameCursorPos++;if(nameCursorPos<nameStr.length){const ci=NAME_CHARS.indexOf(nameStr[nameCursorPos]);if(ci>=0)nameCharIdx=ci;}Snd.sfx('nav',cfg.music);}
+        }
+        else if(key==='NameAdd'){
+            if(NAME_CHARS[nameCharIdx]==='\r'){
+                if(!nameStr.trim()) return;
+                try{localStorage.setItem('lastSName',nameStr);}catch{}
+                addScore(nameStr,score,level);Snd.sfx('select',cfg.music);
+                _scoreboardCache=getScores();phase='scores';showHUD(false);setTimeout(()=>nameInp.blur(),10);
+            } else if(nameCursorPos<nameStr.length){
+                nameStr=nameStr.slice(0,nameCursorPos)+NAME_CHARS[nameCharIdx]+nameStr.slice(nameCursorPos+1);
+                nameCursorPos=Math.min(nameCursorPos+1,nameStr.length);
+                Snd.sfx('nav',cfg.music);
+            } else if(nameStr.length<MAX_NAME){
+                nameStr+=NAME_CHARS[nameCharIdx];nameCursorPos++;
+                Snd.sfx('nav',cfg.music);
+            }
+        }
+        else if(key.length===1&&/^[A-Z0-9_ ]$/i.test(key)){
+            const ch=key.toUpperCase();
+            if(nameCursorPos<nameStr.length){nameStr=nameStr.slice(0,nameCursorPos)+ch+nameStr.slice(nameCursorPos+1);nameCursorPos=Math.min(nameCursorPos+1,nameStr.length);}
+            else if(nameStr.length<MAX_NAME){nameStr+=ch;nameCursorPos++;}
+            Snd.sfx('nav',cfg.music);
+        }
         else if(key==='Enter'){
-            try { localStorage.setItem('lastSName', nameStr.trim()||'SNAKE PLISSKEN'); } catch {}
+            if(!nameStr.trim()) return;
+            try { localStorage.setItem('lastSName', nameStr); } catch {}
             addScore(nameStr,score,level); Snd.sfx('select',cfg.music);
             _scoreboardCache=getScores(); phase='scores'; showHUD(false); setTimeout(()=>nameInp.blur(),10);
         }
@@ -1828,7 +1856,7 @@ canvas.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch') return;
     e.preventDefault();
     if (phase === 'splash') { leaveSplash(false); }
-    else if (phase !== 'playing') { handleKey('Enter', null); }
+    else if (phase !== 'playing' && phase !== 'nameEntry') { handleKey('Enter', null); }
 });
 canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { leaveSplash(true); e.preventDefault(); } }, { passive: false });
 
@@ -1878,7 +1906,7 @@ canvas.addEventListener('touchend',e=>{
     if(_swipeBase){
         const t=e.changedTouches[0];
         const isTap=Math.hypot(t.clientX-_swipeBase.x,t.clientY-_swipeBase.y)<SWIPE_1&&!_swipeLastDir&&!_swipedThisTouch&&performance.now()-_swipeTouchStartAt>20;
-        if(phase!=='playing'&&(isTap||cfg.touchSelect)) handleKey('Enter',null);
+        if(phase!=='playing'&&phase!=='nameEntry'&&(isTap||cfg.touchSelect)) handleKey('Enter',null);
     }
     _swipeBase=null; _swipeLastDir=null; _swipeLastMovePos=null;
     if(phase==='playing'){boostDir=null;boosting=false;}
@@ -1912,10 +1940,12 @@ document.addEventListener('keyup', e=>{
 });
 
 // Side buttons
-document.getElementById('btn-ok').addEventListener('touchstart',e=>{handleKey('Enter',null);e.preventDefault();},{passive:false});
-document.getElementById('btn-ok').addEventListener('click',()=>handleKey('Enter',null));
+document.getElementById('btn-ok').addEventListener('touchstart',e=>{handleKey(phase==='nameEntry'?'NameAdd':'Enter',null);e.preventDefault();},{passive:false});
+document.getElementById('btn-ok').addEventListener('click',()=>handleKey(phase==='nameEntry'?'NameAdd':'Enter',null));
 document.getElementById('btn-pause').addEventListener('touchstart',e=>{handleKey(' ',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-pause').addEventListener('click',()=>handleKey(' ',null));
+document.getElementById('btn-start').addEventListener('touchstart',e=>{handleKey('Enter',null);e.preventDefault();},{passive:false});
+document.getElementById('btn-start').addEventListener('click',()=>handleKey('Enter',null));
 document.getElementById('gamepad').classList.add('splash');
 document.getElementById('btn-esc').addEventListener('touchstart',e=>{handleKey('Escape',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escape',null));
@@ -1925,22 +1955,19 @@ document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escap
 nameInp.addEventListener('input', e => {
     if (phase !== 'nameEntry') return;
     if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') {
-        if (nameStr.length > 0) { nameStr = nameStr.slice(0,-1); Snd.sfx('nav',cfg.music); }
+        handleKey('Escape', null);
         nameInp.value = ''; return;
     }
     const val = nameInp.value.toUpperCase();
     for (const ch of val) {
-        if (nameStr.length < MAX_NAME && NAME_CHARS.includes(ch)) {
-            nameStr += ch; Snd.sfx('nav', cfg.music);
-        }
+        if (NAME_CHARS.includes(ch)) { handleKey(ch, null); }
     }
     nameInp.value = '';
 });
 nameInp.addEventListener('keydown', e => {
     if (phase !== 'nameEntry') return;
     if (e.key === 'Enter') { handleKey('Enter', () => e.preventDefault()); }
-    if (e.key === 'Backspace') { e.preventDefault(); if(nameStr.length>0){nameStr=nameStr.slice(0,-1);Snd.sfx('nav',cfg.music);} }
-    // Block input event for letter keys -- global keydown handler already adds them
+    if (e.key === 'Backspace') { e.preventDefault(); handleKey('Escape', null); }
     if (e.key.length === 1) e.preventDefault();
 });
 
@@ -2005,7 +2032,7 @@ function loop(now) {
     }
     if(phase==='dying'&&now-phaseAt>=DEATH_DUR){
         if(lives>0)beginLevel();
-        else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=nameStr.length>0?NAME_CHARS.indexOf(' '):0;nameReason='over';showHUD(false);Snd.stop();}
+        else{phase='nameEntry';try{nameStr=(localStorage.getItem('lastSName')||'').substring(0,MAX_NAME);}catch{nameStr='';}nameCharIdx=nameStr.length>0?NAME_CHARS.indexOf(' '):0;nameCursorPos=nameStr.length;nameReason='over';showHUD(false);Snd.stop();}
     }
     if(phase==='levelDone'&&!levelDoneWaiting&&now-phaseAt>=LEVELDONE_DUR){
         levelDoneWaiting=true;
