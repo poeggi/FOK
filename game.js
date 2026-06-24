@@ -1645,7 +1645,7 @@ function leaveSplash(fromTouch = false) {
     document.getElementById('gamepad').classList.remove('splash');
 }
 
-const GAME_KEYS = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape','Backspace',' ']);
+const GAME_KEYS = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape','Backspace',' ','NameAdd']);
 function handleKey(key, pde) {
     // Let browser handle F-keys (F5 reload, F11 fullscreen, etc.)
     if (key.length > 1 && !GAME_KEYS.has(key)) return;
