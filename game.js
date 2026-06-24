@@ -1972,7 +1972,7 @@ document.getElementById('btn-pause').addEventListener('click',()=>handleKey(' ',
 document.getElementById('btn-start').addEventListener('touchstart',e=>{handleKey('Enter',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-start').addEventListener('click',()=>handleKey('Enter',null));
 document.getElementById('gamepad').classList.add('splash');
-document.getElementById('btn-esc').addEventListener('touchstart',e=>{if(phase==='nameEntry')nameInp.blur();handleKey('Escape',null);e.preventDefault();},{passive:false});
+document.getElementById('btn-esc').addEventListener('touchstart',e=>{handleKey('Escape',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-esc').addEventListener('click',()=>handleKey('Escape',null));
 
 
