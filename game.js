@@ -464,7 +464,7 @@ let perfectCount = 0, luckyCount = 0;
 let achPage = 0;
 let nameStr = '', nameCharIdx = 0, nameCursorPos = 0, nameReason = '';
 let _nameFlashAt = 0, _nameFlashPos = -1;
-let creditsScroll = 0, creditsSpeed = 0.8;
+let creditsScroll = 0, creditsSpeed = 0.8, _creditsNormal = 0.8;
 let purchaseParticles = [], purchaseAnimAt = 0;
 let fpsFrames = 0, fpsLast = 0;
 
@@ -1621,8 +1621,8 @@ dpadCanvas.addEventListener('touchmove',e=>{
         _startDpadRepeat(dpadActive);
     }
 },{passive:false});
-dpadCanvas.addEventListener('touchend',e=>{e.preventDefault();dpadActive=null;drawDpad(null);boostDir=null;boosting=false;_clearDpadRepeat();},{passive:false});
-dpadCanvas.addEventListener('touchcancel',e=>{dpadActive=null;drawDpad(null);boostDir=null;boosting=false;_clearDpadRepeat();});
+dpadCanvas.addEventListener('touchend',e=>{e.preventDefault();dpadActive=null;drawDpad(null);boostDir=null;boosting=false;_clearDpadRepeat();if(phase==='credits')creditsSpeed=_creditsNormal;},{passive:false});
+dpadCanvas.addEventListener('touchcancel',e=>{dpadActive=null;drawDpad(null);boostDir=null;boosting=false;_clearDpadRepeat();if(phase==='credits')creditsSpeed=_creditsNormal;});
 dpadCanvas.addEventListener('click',e=>{handleKey(dpadDir(e,dpadCanvas),null);});
 drawDpad(null);
 
@@ -1670,7 +1670,7 @@ function handleKey(key, pde) {
     // Space = pause toggle (playing/paused only)
     if(key===' '){
         if(phase==='playing'||phase==='paused'){ togglePause(); if(pde)pde(); return; }
-        if(phase==='credits'){ creditsSpeed=creditsSpeed>0?0:0.8; if(pde)pde(); return; }
+        if(phase==='credits'){ _creditsNormal=_creditsNormal>0?0:0.8; creditsSpeed=_creditsNormal; if(pde)pde(); return; }
     }
 
     // Escape = quit confirm in-game, or back in menus
@@ -1705,7 +1705,7 @@ function handleKey(key, pde) {
             else if(menuSel===2){phase='scores';_scoreboardCache=getScores();}
             else if(menuSel===3){phase='achievements';achPage=0;}
             else if(menuSel===4){phase='shop';shopSel=0;purchaseAnimAt=0;}
-            else{phase='credits';creditsScroll=CH+40;creditsSpeed=0.8;}
+            else{phase='credits';creditsScroll=CH+40;creditsSpeed=0.8;_creditsNormal=0.8;}
             if(pde)pde();
         }
     }
@@ -1743,9 +1743,9 @@ function handleKey(key, pde) {
         if(pde)pde();
     }
     else if(phase==='credits'){
-        if(key==='ArrowDown'){creditsSpeed=3.2;if(pde)pde();}
-        else if(key==='ArrowUp'){creditsSpeed=0.4;if(pde)pde();}
-        else if(key==='Enter'){phase='menu';creditsSpeed=0.8;if(pde)pde();}
+        if(key==='ArrowDown'){creditsSpeed=3.5;if(pde)pde();}
+        else if(key==='ArrowUp'){creditsSpeed=0.15;if(pde)pde();}
+        else if(key==='Enter'){phase='menu';creditsSpeed=0.8;_creditsNormal=0.8;if(pde)pde();}
     }
     else if(phase==='scores'){ phase='menu'; if(pde)pde(); }
     else if(phase==='achievements'){
@@ -1934,7 +1934,7 @@ canvas.addEventListener('touchend',e=>{
     }
     _swipeBase=null; _swipeLastDir=null; _swipeLastMovePos=null;
     if(phase==='playing'){boostDir=null;boosting=false;}
-    if(phase==='credits'){creditsSpeed=0.8;}
+    if(phase==='credits'){creditsSpeed=_creditsNormal;}
 },{passive:false});
 
 // Restore audio on pointer gestures mid-game (background resume, desktop mouse, etc.).
@@ -1960,7 +1960,7 @@ document.addEventListener('keydown', e=>{
 document.addEventListener('keyup', e=>{
     const d=GDIRS[e.key];
     if(d&&boostDir&&d.x===boostDir.x&&d.y===boostDir.y){boostDir=null;boosting=false;}
-    if(phase==='credits'&&(e.key==='ArrowDown'||e.key==='ArrowUp'))creditsSpeed=0.8;
+    if(phase==='credits'&&(e.key==='ArrowDown'||e.key==='ArrowUp'))creditsSpeed=_creditsNormal;
 });
 
 // Side buttons
