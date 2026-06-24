@@ -171,15 +171,16 @@ const Snd = (() => {
         });
     }
 
+    // TODO: AUDIO MYSTERY -- structured refactoring needed.
+    // Music scheduling (tick/play) does NOT wake the iOS audio pipeline; only real
+    // audio events (sfx oscillators being started) do. The 1-sample buffer below is
+    // an attempt to replicate that, but it is not reliable. The real fix requires
+    // rethinking how the pipeline is primed: events start the pipeline, music does not.
     function play(t) {
         if (!ac || curTrack === t) return;
         curTrack = t; isPaused = false;
         chState = SEQ[t].channels.map(() => ({ pos: 0, nextNote: ac.currentTime }));
         _justInited = false;
-        // Re-prime the audio pipeline each time a track starts: iOS silences the
-        // mGain output path if no audio has flowed since init(). A fresh 1-sample
-        // buffer creates the activity needed to wake it — no user gesture required
-        // since the AC is already running at this point.
         const _pb = ac.createBuffer(1, 1, 22050), _ps = ac.createBufferSource();
         _ps.buffer = _pb; _ps.connect(ac.destination); _ps.start(0);
         mGain.gain.cancelScheduledValues(ac.currentTime);
@@ -283,6 +284,8 @@ const Snd = (() => {
         } else if (type === 'epic_eat') {
             [523,659,784,1047,1319,1568,2093].forEach((f,i)=>t(f,now+i*0.055,0.24));
             [784,988,1319,1568].forEach(f=>t(f,now+0.45,0.36,'triangle'));
+        } else if (type === 'coin') {
+            t(1568,now,0.03); t(1319,now+0.045,0.04); t(880,now+0.095,0.08);
         }
     }
 
@@ -1051,7 +1054,7 @@ function drawMenu() {
     ctx.fillStyle='#4a7a4a'; ctx.textAlign='left';
     ctx.fillText(_swVersion, 10, CH-8);
     ctx.textAlign='center';
-    ctx.fillText('UP/DOWN  |  ENTER to select', CW/2, CH-8);
+    ctx.fillText('UP/DOWN  |  A:OK/ENTER select', CW/2, CH-8);
     ctx.fillStyle='#ffd700'; ctx.textAlign='right';
     ctx.fillText(`FOKOINS: ${coins.toLocaleString()}`, CW-10, CH-8);
     ctx.restore();
@@ -1215,7 +1218,7 @@ function drawAchievements() {
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const total=list.filter(a=>achUnlocked[a.id]).length;
     ct(`${total} / ${list.length} UNLOCKED`,CW/2,CH-26,'#6aaa6a',8);
-    const hint=expert?'LEFT/RIGHT  SWITCH PAGE   ENTER to return':'Any key or OK to return';
+    const hint=expert?'LEFT/RIGHT: page   A:OK/ENTER: return':'Any key or OK to return';
     ct(hint,CW/2,CH-10,'#999',8);
 }
 
@@ -1305,7 +1308,7 @@ function drawShop() {
     ctx.shadowColor='#ffd700'; ctx.shadowBlur=6;
     ct(`BALANCE: ${coins.toLocaleString()} FK`,CW/2,CH-30,'#ffd700',8);
     ctx.shadowBlur=0;
-    ct('ENTER buy  |  SPACE wear/remove  |  ESC back',CW/2,CH-12,'#888',8);
+    ct('A:OK/ENTER buy  |  ||/SPC wear  |  ESC back',CW/2,CH-12,'#888',8);
     // Purchase particles
     const now=performance.now();
     purchaseParticles=purchaseParticles.filter(p=>{
@@ -1364,7 +1367,7 @@ function drawCredits() {
     ctx.restore();
     creditsScroll -= creditsSpeed;
     if (creditsScroll < -CRED_TOTAL_H) creditsScroll = CH + 40;  // loop
-    ct('HOLD UP slow  HOLD DOWN fast  |  ENTER exit', CW/2, CH-12, '#6a9a6a', 8);
+    ct('UP slow  DN fast  || pause  |  A:OK/ENTER exit', CW/2, CH-12, '#6a9a6a', 8);
 }
 
 function drawNameEntry(now) {
@@ -1486,7 +1489,7 @@ function drawGameBoard(now) {
         ctx.shadowColor='#7fff7f'; ctx.shadowBlur=24;
         ct('PAUSED',CW/2,CH/2+10,'#7fff7f',26); ctx.shadowBlur=0;
         ctx.save(); ctx.font='8px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.textAlign='center'; ctx.shadowBlur=0;
-        ctx.fillStyle='#4a7a4a'; ctx.fillText('SPACE / PSE to resume   ESC to quit menu',CW/2,CH-8); ctx.restore();
+        ctx.fillStyle='#4a7a4a'; ctx.fillText('|| / SPACE resume   ESC quit',CW/2,CH-8); ctx.restore();
     }
     // Bonus flash (duration and colour vary by tier)
     const bonusAge=now-bonusAt;
@@ -1635,7 +1638,7 @@ let _splashLeftAt = 0, _splashTouchPending = false;
 let _splashFast = false, _splashFastStart = 0, _splashFastBase = 0;
 function leaveSplash(fromTouch = false) {
     _splashFast = false; _splashFastStart = 0; _splashFastBase = 0;
-    Snd.resume();
+    Snd.resume(); Snd.sfx('coin', cfg.music);
     _splashLeftAt = performance.now();
     _splashTouchPending = fromTouch;
     phase = 'menu'; phaseAt = performance.now();
@@ -2016,7 +2019,7 @@ function updateMuteBtn(){
         c.fillRect(rx*2+16,ry*2,2,2);
     }));
 }
-function toggleMute(){ cfg.music=!cfg.music; if(!cfg.music)Snd.stop(); else Snd.resume(); updateMuteBtn(); saveCfg(); }
+function toggleMute(){ cfg.music=!cfg.music; if(!cfg.music)Snd.stop(); else{Snd.resume();Snd.sfx('nav',cfg.music);} updateMuteBtn(); saveCfg(); }
 muteBtn.addEventListener('click',toggleMute);
 muteBtn.addEventListener('touchstart',e=>{e.preventDefault();toggleMute();},{passive:false});
 updateMuteBtn();
@@ -2035,7 +2038,7 @@ function _updateBtnDim() {
     if(phase===_dimPhase) return;
     _dimPhase=phase;
     const gameplay=['playing','paused','dying','levelReady','levelDone'].includes(phase);
-    const noAction=['settings','scores','achievements','shop'].includes(phase);
+    const noAction=['settings','scores','achievements','shop','credits'].includes(phase);
     _btnPause.classList.toggle('dim', !['playing','paused','credits'].includes(phase));
     _btnStart.classList.toggle('dim', gameplay || noAction);
 }
