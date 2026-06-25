@@ -908,7 +908,7 @@ function drawAchievements() {
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const total=list.filter(a=>achUnlocked[a.id]).length;
-    ct(`${total} / ${list.length} UNLOCKED`,CW/2,CH-26,'#6aaa6a',10);
+    ctx.shadowColor='#6aaa6a'; ctx.shadowBlur=6; ct(`${total} / ${list.length} UNLOCKED`,CW/2,CH-26,'#6aaa6a',10); ctx.shadowBlur=0;
     const hint=expert?'LEFT/RIGHT: page   A:OK/ENTER: return':'Any key or OK to return';
     ct(hint,CW/2,CH-10,'#999',10);
 }
