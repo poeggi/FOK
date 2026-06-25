@@ -293,6 +293,7 @@ const Snd = (() => {
         const buf = _ctx.createBuffer(1, 1, 22050), src = _ctx.createBufferSource();
         src.buffer = buf; src.connect(_ctx.destination); src.start(0);
         sfxPlay('coin');
+        audioResume();
         _preWarmed = true;
     }
 
