@@ -289,11 +289,11 @@ const Snd = (() => {
     // Document-level capture listener: fires on the absolute first touch anywhere on the
     // page, before any game handler sees it. Gives iOS an early resume() attempt so that
     // by the time the user reaches INSERT COIN the context is likely already running.
-    const _unlockOnce = () => {
-        audioResume();
-        document.removeEventListener('touchstart', _unlockOnce, true);
-    };
-    document.addEventListener('touchstart', _unlockOnce, true);
+    // const _unlockOnce = () => {
+    //     audioResume();
+    //     document.removeEventListener('touchstart', _unlockOnce, true);
+    // };
+    // document.addEventListener('touchstart', _unlockOnce, true);
 
     return {
         audioInit, audioResume, audioBgSuspend,
