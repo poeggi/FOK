@@ -8,7 +8,7 @@ const Snd = (() => {
     let _musicVol = 1.0, _sfxVol = 0.5;
     let _currentTrack = null, _channelState = [];
     let _musicIsPaused = false, _bgSuspended = false;
-    let _warmOsc = null, _warmGain = null, _preWarmed = false;
+    let _preWarmed = false;
 
     // ── Music data ────────────────────────────────────────────────
     const SEQ = {
@@ -130,16 +130,15 @@ const Snd = (() => {
     // ── Audio context lifecycle ───────────────────────────────────
 
     function audioInit() {
-        // Create AudioContext. Must be called from a trusted user gesture.
+        // Build the permanent audio graph. Called at load; AC starts suspended.
+        // Fire-and-forget resume() knocks on the OS audio door immediately.
         if (_ctx) return;
         try {
             _ctx = new (window.AudioContext || window.webkitAudioContext)();
             _musicGain = _ctx.createGain(); _musicGain.gain.value = 0; _musicGain.connect(_ctx.destination);
             _sfxGain = _ctx.createGain(); _sfxGain.gain.value = 0.58 * _sfxVol; _sfxGain.connect(_ctx.destination);
             _ctx.onstatechange = () => { if (_ctx.state === 'running') _onContextRunning(); };
-            // 1-sample silent buffer: prompts iOS to treat this context as user-gesture-unlocked
-            const buf = _ctx.createBuffer(1, 1, 22050), src = _ctx.createBufferSource();
-            src.buffer = buf; src.connect(_ctx.destination); src.start(0);
+            _ctx.resume().catch(() => {});
         } catch(e) { _ctx = null; }
     }
 
@@ -283,32 +282,22 @@ const Snd = (() => {
     }
 
     function audioPreWarm() {
-        // Called unconditionally at load. Mutes sfx bus and starts a sustained silent
-        // oscillator so the pipeline is active from the moment the AC first resumes.
-        // Nodes created on a suspended AC are scheduled at currentTime=0 and start
-        // running as soon as the AC transitions to running.
+        // Prime the pipeline at load: set sfx bus to near-zero (not exactly 0, to prevent
+        // browser optimizing the signal away) then fire a real sfx through it. The signal
+        // travels all the way to the OS driver but is inaudible (-60dB). Self-destructs
+        // naturally after ~175ms. No nodes added to the permanent graph.
         if (!_ctx) return;
         _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
-        _sfxGain.gain.setValueAtTime(0, _ctx.currentTime);
-        _warmGain = _ctx.createGain();
-        _warmGain.gain.setValueAtTime(0, _ctx.currentTime);
-        _warmOsc = _ctx.createOscillator();
-        _warmOsc.type = 'triangle';
-        _warmOsc.frequency.value = 440;
-        _warmOsc.connect(_warmGain); _warmGain.connect(_ctx.destination);
-        _warmOsc.start(_ctx.currentTime);
-        _warmOsc.stop(_ctx.currentTime + 10);
-        _warmOsc.onended = () => {
-            if (_warmOsc) { _warmOsc.disconnect(); _warmOsc = null; }
-            if (_warmGain) { _warmGain.disconnect(); _warmGain = null; }
-            _preWarmed = false;
-        };
+        _sfxGain.gain.setValueAtTime(0.001, _ctx.currentTime);
+        // 1-sample silent buffer: additional iOS hint that this context has audio work
+        const buf = _ctx.createBuffer(1, 1, 22050), src = _ctx.createBufferSource();
+        src.buffer = buf; src.connect(_ctx.destination); src.start(0);
+        sfxPlay('coin');
         _preWarmed = true;
     }
 
     function audioUnmute(sfxType = 'nav') {
-        // Restore sfx bus from pre-warm mute, then resume + play sfx.
-        // Warm oscillator is left to run its course — no reason to stop it.
+        // Restore sfx bus from pre-warm level, then resume + play sfx.
         if (_preWarmed) {
             _preWarmed = false;
             _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
@@ -318,8 +307,8 @@ const Snd = (() => {
         sfxPlay(sfxType);
     }
 
-    // Eager init + pre-warm: build graph and queue silent oscillator immediately.
-    // Both run on the suspended AC; nodes start the moment the AC first resumes.
+    // Build graph and prime pipeline at load. AC is suspended; prewarm oscillators
+    // fire the moment the AC first resumes from a user gesture.
     audioInit();
     audioPreWarm();
 
