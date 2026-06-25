@@ -1341,7 +1341,7 @@ function triggerSplashExit() {
     _splashFast = false; _splashFastStart = 0; _splashFastBase = 0;
     _splashExiting = true;
     _splashExitAt = performance.now();
-    Snd.sfxPlay('coin'); Snd.audioResume();
+    Snd.sfxPlay('coin'); //Snd.audioResume();
 }
 
 const GAME_KEYS = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape','Backspace',' ','NameAdd']);
