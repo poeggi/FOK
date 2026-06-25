@@ -1359,7 +1359,7 @@ function handleKey(key, pde) {
         }
         const splashOk = key.length === 1 || key === 'Enter';
         if (!splashOk) return;
-        triggerSplashExit(false); _splashExitWaiting = false; _splashKeyHeld = true; if (pde) pde(); return;
+        triggerSplashExit(false); _splashExitWaiting = false; if (pde) pde(); return;
     }
     if (_splashKeyHeld) return;
     if (performance.now() - _splashLeftAt < 200) return;
@@ -1670,6 +1670,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) onBgH
 window.addEventListener('blur', onBgHide);
 window.addEventListener('focus', onBgShow);
 document.addEventListener('keydown', e=>{
+    if(phase==='splash'&&!_splashExiting) _splashKeyHeld = true;
     handleKey(e.key,()=>e.preventDefault());
     if(!e.repeat&&phase==='playing'){const d=GDIRS[e.key];if(d){boostDir=d;boostSince=performance.now();boosting=false;}}
     if(phase==='playing') canvas.style.cursor='none';
