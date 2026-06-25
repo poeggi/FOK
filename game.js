@@ -1647,7 +1647,8 @@ canvas.addEventListener('touchend',e=>{
 
 // Restore audio on pointer gestures mid-game (background resume, desktop mouse, etc.).
 document.addEventListener('pointerdown', () => Snd.audioResume(), {capture:true, passive:true});
-document.addEventListener('touchend', () => Snd.audioResume(), {passive:true});
+document.addEventListener('touchstart', () => { if (phase === 'splash') Snd.audioResume(); }, {passive:true});
+//document.addEventListener('touchend', () => Snd.audioResume(), {passive:true});
 // Pause audio when app goes to background, resume when it returns
 function onBgHide() {
     if (phase === 'playing') { phase = 'paused'; pauseAt = performance.now(); Snd.musicGamePause(); }
