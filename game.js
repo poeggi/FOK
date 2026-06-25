@@ -1643,10 +1643,8 @@ canvas.addEventListener('touchend',e=>{
 },{passive:false});
 
 // Restore audio on pointer gestures mid-game (background resume, desktop mouse, etc.).
-document.addEventListener('pointerdown', () => Snd.audioResume(), {capture:true, passive:true});
-// touchend is a trusted iOS Safari gesture; gives AC a second unlock attempt if the
-// touchstart-based resume() promise silently hung (iOS WebKit quirk).
-document.addEventListener('touchend', () => Snd.audioResume(), {passive:true});
+// document.addEventListener('pointerdown', () => Snd.audioResume(), {capture:true, passive:true});
+// document.addEventListener('touchend', () => Snd.audioResume(), {passive:true});
 // Pause audio when app goes to background, resume when it returns
 function onBgHide() {
     if (phase === 'playing') { phase = 'paused'; pauseAt = performance.now(); Snd.musicGamePause(); }
