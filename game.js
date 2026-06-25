@@ -1672,7 +1672,7 @@ document.addEventListener('keyup', e=>{
 });
 
 // Side buttons
-document.getElementById('btn-ok').addEventListener('touchstart',e=>{if(phase==='nameEntry')nameInp.blur();handleKey(phase==='nameEntry'?'NameAdd':'Enter',null);e.preventDefault();},{passive:false});
+document.getElementById('btn-ok').addEventListener('touchstart',e=>{Snd.audioResume();if(phase==='nameEntry')nameInp.blur();handleKey(phase==='nameEntry'?'NameAdd':'Enter',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-ok').addEventListener('click',()=>handleKey(phase==='nameEntry'?'NameAdd':'Enter',null));
 document.getElementById('btn-pause').addEventListener('touchstart',e=>{handleKey(' ',null);e.preventDefault();},{passive:false});
 document.getElementById('btn-pause').addEventListener('click',()=>handleKey(' ',null));
@@ -1857,7 +1857,7 @@ if ('caches' in window) {
 }
 
 if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    window.addEventListener('load', () => { Snd.audioResume();
         const wasControlled = !!navigator.serviceWorker.controller;
         navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(reg => {
             if (navigator.onLine) reg.update().catch(() => {});
