@@ -8,7 +8,7 @@ const Snd = (() => {
     let _musicVol = 1.0, _sfxVol = 0.5;
     let _currentTrack = null, _channelState = [];
     let _musicIsPaused = false, _bgSuspended = false;
-    let _warmOsc = null, _warmGain = null, _preWarmed = false, _activated = false;
+    let _warmOsc = null, _warmGain = null, _preWarmed = false;
 
     // ── Music data ────────────────────────────────────────────────
     const SEQ = {
@@ -283,11 +283,11 @@ const Snd = (() => {
     }
 
     function audioPreWarm() {
-        // Called after AC resumes from first-ever touch. Mutes sfx bus and starts a
-        // sustained silent oscillator to keep the iOS audio session and DAC pipeline
-        // continuously active until the first real sound fires.
-        // Skipped if activation already happened (coin tap was the first touch).
-        if (!_ctx || _ctx.state !== 'running' || _activated) return;
+        // Called unconditionally at load. Mutes sfx bus and starts a sustained silent
+        // oscillator so the pipeline is active from the moment the AC first resumes.
+        // Nodes created on a suspended AC are scheduled at currentTime=0 and start
+        // running as soon as the AC transitions to running.
+        if (!_ctx) return;
         _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
         _sfxGain.gain.setValueAtTime(0, _ctx.currentTime);
         _warmGain = _ctx.createGain();
@@ -307,12 +307,10 @@ const Snd = (() => {
     }
 
     function audioUnmute(sfxType = 'nav') {
-        // First call: restore sfx bus from pre-warm mute and stop warm oscillator.
-        // Subsequent calls (music toggle): behaves like old musicUnmute.
-        _activated = true;
+        // Restore sfx bus from pre-warm mute, then resume + play sfx.
+        // Warm oscillator is left to run its course — no reason to stop it.
         if (_preWarmed) {
             _preWarmed = false;
-            if (_warmOsc) { try { _warmOsc.stop(_ctx.currentTime); } catch(e) {} }
             _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
             _sfxGain.gain.setValueAtTime(0.58 * _sfxVol, _ctx.currentTime);
         }
@@ -320,15 +318,16 @@ const Snd = (() => {
         sfxPlay(sfxType);
     }
 
-    // Eager init: build the audio graph immediately so the first gesture only needs resume().
-    // AC starts suspended on iOS; no audio plays until resume() is called from a gesture.
+    // Eager init + pre-warm: build graph and queue silent oscillator immediately.
+    // Both run on the suspended AC; nodes start the moment the AC first resumes.
     audioInit();
+    audioPreWarm();
 
     // Document-level capture listener: fires on the absolute first touch anywhere on the
     // page, before any game handler sees it. Gives iOS an early resume() attempt so that
     // by the time the user reaches INSERT COIN the context is likely already running.
     const _unlockOnce = () => {
-        audioResume().then(audioPreWarm);
+        audioResume();
         document.removeEventListener('touchstart', _unlockOnce, true);
     };
     document.addEventListener('touchstart', _unlockOnce, true);
