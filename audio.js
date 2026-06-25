@@ -270,6 +270,8 @@ const Snd = (() => {
             [784,988,1319,1568].forEach(f => t(f, now + 0.45, 0.36, 'triangle'));
         } else if (type === 'coin') {
             t(1568, now, 0.03); t(1319, now + 0.045, 0.04); t(880, now + 0.095, 0.08);
+        } else if (type === 'fail') {
+            t(330, now, 0.05, 'sawtooth'); t(196, now + 0.06, 0.12, 'sawtooth');
         }
     }
 

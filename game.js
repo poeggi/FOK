@@ -907,9 +907,6 @@ function drawAchievements() {
         }
         ctx.fillText(_d1,x+26,y+24);
         if(_d2) ctx.fillText(_d2,x+26,y+34);
-        ctx.font='10px "Press Start 2P"';
-        ctx.fillStyle=got?'#5a8a5a':'#666666';
-        ctx.fillText(got?'UNLOCKED':'???',x+26,y+50);
     });
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const total=list.filter(a=>achUnlocked[a.id]).length;
@@ -1471,7 +1468,7 @@ function handleKey(key, pde) {
                 saveCfg();
                 if(SHOP_ITEMS.filter(s=>!s.repeatable).every(s=>si[s.id])) unlockAch('shop_full');
                 triggerPurchaseAnim(); Snd.sfxPlay('perfect',cfg.music);
-            }
+            } else if(item&&(_cachedFOKoins<item.price)){ Snd.sfxPlay('fail',cfg.music); }
         }
         else if(key===' '){
             const item=SHOP_ITEMS[shopSel];
