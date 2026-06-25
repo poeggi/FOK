@@ -1333,7 +1333,7 @@ drawDpad(null);
 // ================================================================
 const GDIRS={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}};
 
-let _splashLeftAt = 0, _splashTouchPending = false;
+let _splashLeftAt = 0, _splashTouchPending = false, _splashKeyHeld = false;
 let _splashFast = false, _splashFastStart = 0, _splashFastBase = 0;
 let _splashExiting = false, _splashExitAt = 0, _splashExitWaiting = false;
 function triggerSplashExit(fromTouch = false) {
@@ -1359,8 +1359,9 @@ function handleKey(key, pde) {
         }
         const splashOk = key.length === 1 || key === 'Enter';
         if (!splashOk) return;
-        triggerSplashExit(false); _splashExitWaiting = false; if (pde) pde(); return;
+        triggerSplashExit(false); _splashExitWaiting = false; _splashKeyHeld = true; if (pde) pde(); return;
     }
+    if (_splashKeyHeld) return;
     if (performance.now() - _splashLeftAt < 200) return;
     Snd.audioResume();
 
@@ -1674,6 +1675,7 @@ document.addEventListener('keydown', e=>{
     if(phase==='playing') canvas.style.cursor='none';
 });
 document.addEventListener('keyup', e=>{
+    _splashKeyHeld = false;
     const d=GDIRS[e.key];
     if(d&&boostDir&&d.x===boostDir.x&&d.y===boostDir.y){boostDir=null;boosting=false;}
     if(phase==='credits'&&(e.key==='ArrowDown'||e.key==='ArrowUp'))creditsSpeed=_creditsNormal;
