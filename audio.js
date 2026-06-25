@@ -141,7 +141,7 @@ const Snd = (() => {
             _musicGain = _ctx.createGain(); _musicGain.gain.value = 0; _musicGain.connect(_ctx.destination);
             _sfxGain = _ctx.createGain(); _sfxGain.gain.value = 0.5 *_sfxVol; _sfxGain.connect(_ctx.destination);
             _ctx.onstatechange = () => { if (_ctx.state === 'running') _onContextRunning(); };
-            _ctx.resume().catch(() => {});
+            //_ctx.resume().catch(() => {});
         } catch(e) { _ctx = null; }
     }
 
