@@ -141,6 +141,22 @@ const Snd = (() => {
         } catch(e) { _ctx = null; }
     }
 
+    function audioPreWarm() {
+        // Prime the pipeline at load: fire a real sfx through it at near-zero gain,
+        // then restore sfx bus to configured level. Self-destructs after ~175ms.
+        if (!_ctx) return;
+        _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
+        _sfxGain.gain.setValueAtTime(0.001, _ctx.currentTime);
+        // 1-sample silent buffer: additional iOS hint that this context has audio work
+        const buf = _ctx.createBuffer(1, 1, 22050), src = _ctx.createBufferSource();
+        src.buffer = buf; src.connect(_ctx.destination); src.start(0);
+        sfxPlay('coin');
+        _ctx.resume().catch(() => {});
+        _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
+        _sfxGain.gain.setValueAtTime(0.58 * _sfxVol, _ctx.currentTime);
+        _ctx.suspend().catch(() => {});
+    }
+
     function audioResume() {
         // Call from every user gesture. iOS cold-start silently hangs the first resume();
         // retrying on each gesture is safe (spec-idempotent). Both .then() and onstatechange
@@ -261,23 +277,6 @@ const Snd = (() => {
     function sfxSetVolume(vol) {
         _sfxVol = vol;
         if (_sfxGain) _sfxGain.gain.value = 0.58 * vol;
-    }
-
-    // ── Pipeline priming ──────────────────────────────────────────
-
-    function audioPreWarm() {
-        // Prime the pipeline at load: fire a real sfx through it at near-zero gain,
-        // then restore sfx bus to configured level. Self-destructs after ~175ms.
-        if (!_ctx) return;
-        _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
-        _sfxGain.gain.setValueAtTime(0.001, _ctx.currentTime);
-        // 1-sample silent buffer: additional iOS hint that this context has audio work
-        const buf = _ctx.createBuffer(1, 1, 22050), src = _ctx.createBufferSource();
-        src.buffer = buf; src.connect(_ctx.destination); src.start(0);
-        sfxPlay('coin');
-        audioResume();
-        _sfxGain.gain.cancelScheduledValues(_ctx.currentTime);
-        _sfxGain.gain.setValueAtTime(0.58 * _sfxVol, _ctx.currentTime);
     }
 
     // Build graph and prime pipeline at load. AC is suspended; prewarm oscillators
