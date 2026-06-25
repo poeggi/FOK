@@ -147,10 +147,12 @@ const Snd = (() => {
         // iOS cold-start silently hangs the first ac.resume(); retrying on each gesture
         // is safe (spec-idempotent). Both .then() and onstatechange call _onContextRunning,
         // so whichever fires first wins; the second call is a harmless no-op.
+        // Returns a Promise that resolves when AC is running (or immediately if already running).
         if (!_ctx) audioInit();
         if (_ctx && _ctx.state === 'suspended') {
-            _ctx.resume().then(_onContextRunning).catch(() => {});
+            return _ctx.resume().then(_onContextRunning).catch(() => {});
         }
+        return Promise.resolve();
     }
 
     function audioTryResume() {

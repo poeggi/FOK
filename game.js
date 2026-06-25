@@ -1348,8 +1348,7 @@ function triggerSplashExit(fromTouch = false) {
     _splashExitAt = performance.now();
     _splashLeftAt = performance.now();
     _splashTouchPending = fromTouch;
-    Snd.audioResume();
-    Snd.sfxPlay('coin');
+    Snd.audioResume().then(() => Snd.sfxPlay('coin'));
 }
 
 const GAME_KEYS = new Set(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Escape','Backspace',' ','NameAdd']);
