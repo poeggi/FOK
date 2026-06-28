@@ -264,7 +264,7 @@ function step(now) {
             Snd.sfxPlay('bonus',cfg.music);
         } else Snd.sfxPlay('eat',cfg.music);
         unlockAch('first_gem');
-        if(bonus){ levelBonusCount++; if(levelBonusCount>=5) unlockAch('bonus_3'); }
+        if(bonus){ levelBonusCount++; if(levelBonusCount>=5) unlockAch('bonus_3'); } else levelBonusCount=0;
         if(score>=64000)  unlockAch('score_25k');
         if(score>=100000) unlockAch('score_100k');
         if(gemsDone>=GEMS_PER_LEVEL){
@@ -746,7 +746,7 @@ function drawMenu() {
     ct('F O K   E D I T I O N',CW/2,122,'#4a7a4a',10);
     const msp=MENU_ITEMS.length<=5?38:30;
     MENU_ITEMS.forEach((item,i)=>menuItem(item,162+i*msp,i===menuSel));
-    ct(`DIFF: ${DIFF[cfg.diff].label}  |  AUDIO: ${cfg.music?'ON':'OFF'}  |  STYLE: ${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,362,'#4a7a4a',10);
+    ct(`DIFF:${DIFF[cfg.diff].label}  AUDIO:${cfg.music?'ON':'OFF'}  STYLE:${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,362,'#4a7a4a',10);
     // Bottom bar: version left, hint center
     ctx.save();
     ctx.font='10px "Press Start 2P"'; ctx.textBaseline='bottom'; ctx.shadowBlur=0;
