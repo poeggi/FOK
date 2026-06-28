@@ -105,6 +105,9 @@ const EXPERT_ACHIEVEMENTS = [
     { id:'fokoins_5m',  name:'DRAGON LORD',   desc:'Earn 5,000,000 total FOKoins',
       icon:{p:{A:'#cc2200',B:'#ff6600',C:'#ffcc00'},
       d:['AAAAAAAA','ABBBBBBA','ABCCCCBA','ABCCCCBA','ABBBBBBA','AAAAAAAA','.AAAAAA.','........']}},
+    { id:'gouranga',   name:'GOURANGA!',      desc:'7 in a row. Hare Krishna.',
+      icon:{p:{A:'#ff8800',B:'#ffcc44'},
+      d:['........','........','........','ABABABA.','ABABABA.','........','........','........']}},
 ];
 
 const SHOP_ITEMS = [

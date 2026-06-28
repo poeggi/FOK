@@ -152,6 +152,7 @@ let spawnAt = 0, levelDoneWaiting = false;
 let pauseReadyAt = 0, escReadyAt = 0;
 let perfectLevel = true, levelWasPerfect = false, fireworks = [];
 let levelBonusCount = 0, epicLevelCount = 0;
+let _gourangaLine=[], _gourangaActive=false, _gourangaCollected=0;
 let boostDir=null, boostSince=0, boosting=false;
 const BOOST_GRACE=180;
 function clearBoost(){boostDir=null;boosting=false;}
@@ -191,6 +192,7 @@ function beginLevel() {
     phase='levelReady'; stepAt=0; phaseAt=performance.now();
     spawnAt=0; levelDoneWaiting=false;
     perfectLevel=true; levelWasPerfect=false; fireworks=[]; levelBonusCount=0; epicLevelCount=0;
+    _gourangaLine=[]; _gourangaActive=false; _gourangaCollected=0;
     clearBoost();
     const blocked = new Set([...snake,{x:cx+1,y:cy},{x:cx+2,y:cy}].map(ck));
     for(let x=0;x<COLS;x++){ blocked.add(ck({x,y:0})); blocked.add(ck({x,y:ROWS-1})); }
@@ -214,16 +216,36 @@ function beginLevel() {
             }
         }
     }
+    _tryGouranga(blocked);
     spawnGem(); renderBarsOffscreen(); Snd.musicGameUnpause(); showHUD(true);
 }
 
 let gemOptimal=0, gemSteps=0;
+function _tryGouranga(blocked) {
+    if(Math.random()>=0.015) return;
+    const horiz=Math.random()<0.5;
+    for(let tries=0;tries<30;tries++){
+        const sx=horiz?ri(COLS-6):ri(COLS), sy=horiz?ri(ROWS):ri(ROWS-6);
+        const line=[]; let ok=true;
+        for(let i=0;i<7;i++){
+            const p={x:horiz?sx+i:sx, y:horiz?sy:sy+i};
+            if(blocked.has(ck(p))){ok=false;break;}
+            line.push(p);
+        }
+        if(ok){_gourangaLine=line;_gourangaActive=true;_gourangaCollected=0;return;}
+    }
+}
 function spawnGem() {
-    gem=freeCell(new Set([...snake,...bars].map(ck))); gemAt=gem.spawnAt=performance.now();
-    const rv=Math.random();
-    gem.tier = rv<0.0005 ? 2 : rv<0.0105 ? 1 : 0;
-    if(gem.tier===2) Snd.sfxPlay('epic_spawn',cfg.music);
-    else if(gem.tier===1) Snd.sfxPlay('lucky_spawn',cfg.music);
+    if(_gourangaActive){
+        gem={..._gourangaLine[_gourangaCollected], gouranga:true, tier:0};
+    } else {
+        gem=freeCell(new Set([...snake,...bars].map(ck)));
+        const rv=Math.random();
+        gem.tier = rv<0.0005 ? 2 : rv<0.0105 ? 1 : 0;
+        if(gem.tier===2) Snd.sfxPlay('epic_spawn',cfg.music);
+        else if(gem.tier===1) Snd.sfxPlay('lucky_spawn',cfg.music);
+    }
+    gemAt=gem.spawnAt=performance.now();
     let dgx=gem.x-snake[0].x, dgy=gem.y-snake[0].y;
     if(dgx>COLS/2) dgx-=COLS; if(dgx<-COLS/2) dgx+=COLS;
     if(dgy>ROWS/2) dgy-=ROWS; if(dgy<-ROWS/2) dgy+=ROWS;
@@ -267,6 +289,16 @@ function step(now) {
         } else Snd.sfxPlay('eat',cfg.music);
         unlockAch('first_gem');
         if(bonus){ levelBonusCount++; if(levelBonusCount>=5) unlockAch('bonus_3'); } else levelBonusCount=0;
+        if(_gourangaActive){
+            _gourangaCollected++;
+            if(_gourangaCollected>=7){
+                _gourangaActive=false;
+                unlockAch('gouranga');
+                addFOKoins(50000);
+                showBonus(now,'GOURANGA!');
+                Snd.sfxPlay('perfect',cfg.music);
+            }
+        }
         if(score>=64000)  unlockAch('score_25k');
         if(score>=100000) unlockAch('score_100k');
         if(gemsDone>=GEMS_PER_LEVEL){
@@ -480,6 +512,18 @@ function drawGem(g,now) {
         ctx.fillStyle='rgba(255,255,255,0.52)';
         ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*0.65,0); ctx.lineTo(0,0); ctx.closePath(); ctx.fill();
         ctx.restore();
+    } else if(g.gouranga) {
+        // Gouranga gem: orange diamond
+        const r=(CS/2-2)*(1+0.12*Math.sin(t*5));
+        ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*2);
+        const grd=ctx.createRadialGradient(0,0,0,0,0,r*2.2);
+        grd.addColorStop(0,'rgba(255,140,0,0.25)'); grd.addColorStop(1,'rgba(255,140,0,0)');
+        ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(0,0,r*2.2,0,Math.PI*2); ctx.fill();
+        ctx.shadowColor='#ff8800'; ctx.shadowBlur=14;
+        const fg=ctx.createLinearGradient(0,-r,0,r);
+        fg.addColorStop(0,'#ffee88'); fg.addColorStop(0.35,'#ff8800'); fg.addColorStop(1,'#cc4400');
+        ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*0.65,0); ctx.lineTo(0,r); ctx.lineTo(-r*0.65,0); ctx.closePath();
+        ctx.fillStyle=fg; ctx.fill(); ctx.restore();
     } else {
         // Normal gem: cyan diamond
         const r=(CS/2-2)*(1+0.12*Math.sin(t*5));
@@ -1065,6 +1109,7 @@ function drawCredits() {
 function drawNameEntry(now) {
     drawGrid();
     if(bars)  bars.forEach(b=>drawBar(b));
+    if(_gourangaActive) _drawGourangaPending(now);
     if(gem)   drawGem(gem,now);
     if(snake) drawSnake(false);
     drawOvBg(0.84);
@@ -1121,8 +1166,18 @@ function drawNameEntry(now) {
     ct('UP/DN:scroll  L/R:move  ||:space  A:ok  ESC:del',CW/2,CH-10,'#888',10);
 }
 
+function _drawGourangaPending(now) {
+    for(let i=_gourangaCollected+1;i<_gourangaLine.length;i++){
+        const g=_gourangaLine[i], gx=g.x*CS+CS/2, gy=g.y*CS+CS/2, r=CS/2-3;
+        ctx.save(); ctx.globalAlpha=0.45; ctx.translate(gx,gy);
+        ctx.shadowColor='#ff8800'; ctx.shadowBlur=6; ctx.fillStyle='#ff8800';
+        ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*0.65,0); ctx.lineTo(0,r); ctx.lineTo(-r*0.65,0); ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+}
 function drawGameBoard(now) {
     drawGrid(); ctx.drawImage(_barsCanvas, 0, 0);
+    if(_gourangaActive) _drawGourangaPending(now);
     if(gem) drawGem(gem,now);
     const dying=phase==='dying',flash=dying&&Math.floor((now-phaseAt)/85)%2===1;
     const protect=phase==='playing'&&(now-spawnAt<1000);
@@ -1193,14 +1248,15 @@ function drawGameBoard(now) {
     }
     // Bonus flash (duration and colour vary by tier)
     const bonusAge=now-bonusAt;
-    const flashDur=bonusLabel.startsWith('EPIC')?1500:900;
+    const isGouranga=bonusLabel==='GOURANGA!';
+    const flashDur=isGouranga?2500:bonusLabel.startsWith('EPIC')?1500:900;
     if(bonusAge<flashDur&&bonusLabel){
         const a=1-bonusAge/flashDur;
         const isEpic=bonusLabel.startsWith('EPIC'),isLucky=bonusLabel.startsWith('LUCKY');
-        const col=isEpic?`hsl(${(now/6)%360},100%,70%)`:'#ffd700';
-        const sz=isEpic?26:14;
+        const col=isGouranga?`hsl(${(now/5)%360},100%,65%)`:isEpic?`hsl(${(now/6)%360},100%,70%)`:'#ffd700';
+        const sz=isGouranga?32:isEpic?26:14;
         ctx.save(); ctx.globalAlpha=a;
-        ctx.shadowColor=col; ctx.shadowBlur=isEpic?24:12;
+        ctx.shadowColor=col; ctx.shadowBlur=isGouranga?36:isEpic?24:12;
         ct(bonusLabel,CW/2,CH/2-60,col,sz);
         ctx.restore();
     }
