@@ -153,7 +153,7 @@ let pauseReadyAt = 0, escReadyAt = 0;
 let perfectLevel = true, levelWasPerfect = false, fireworks = [];
 let levelBonusCount = 0, epicLevelCount = 0;
 let _gourangaLine=[], _gourangaActive=false, _gourangaEaten=new Set();
-let heart=null, heartAt=0, _crushEffects=[];
+let heart=null, heartAt=0, heartIsEarly=false, _earlyHeartUsed=false, _crushEffects=[];
 let powerPellet=null, powerPelletAt=0, _powerMode=false, _powerModeAt=0;
 const _POWER_DUR=5500;
 let boostDir=null, boostSince=0, boosting=false;
@@ -182,7 +182,7 @@ function freeCell(blocked) {
     return p;
 }
 
-function startGame() { level=1; lives=START_LIVES; score=0; perfectCount=0; luckyCount=0; _levelStartLen=0; beginLevel(); }
+function startGame() { level=1; lives=START_LIVES; score=0; perfectCount=0; luckyCount=0; _levelStartLen=0; _earlyHeartUsed=false; beginLevel(); }
 
 function beginLevel(isRespawn=false) {
     const lcfg=LEVEL_CFG[level-1], d=DIFF[cfg.diff];
@@ -196,7 +196,7 @@ function beginLevel(isRespawn=false) {
     spawnAt=0; levelDoneWaiting=false;
     perfectLevel=true; levelWasPerfect=false; fireworks=[]; levelBonusCount=0; epicLevelCount=0;
     _gourangaLine=[]; _gourangaActive=false; _gourangaEaten=new Set();
-    heart=null; heartAt=0; _crushEffects=[];
+    heart=null; heartAt=0; heartIsEarly=false; _crushEffects=[];
     powerPellet=null; _powerMode=false;
     clearBoost();
     const blocked = new Set([...snake,{x:cx+1,y:cy},{x:cx+2,y:cy}].map(ck));
@@ -268,6 +268,11 @@ function spawnGem() {
         const ppB=new Set([...snake,...bars].map(ck)); ppB.add(ck(gem));
         if(heart) ppB.add(ck(heart));
         powerPellet=freeCell(ppB); powerPelletAt=performance.now();
+    }
+    if(!_earlyHeartUsed&&!heart&&level>=4&&level<=6&&Math.random()<0.10){
+        const hB=new Set([...snake,...bars].map(ck)); hB.add(ck(gem));
+        if(powerPellet) hB.add(ck(powerPellet));
+        heart=freeCell(hB); heartAt=performance.now(); heartIsEarly=true; _earlyHeartUsed=true;
     }
 }
 
@@ -1030,7 +1035,7 @@ function drawAchievements() {
     ctx.textAlign='center'; ctx.textBaseline='middle';
     const total=list.filter(a=>achUnlocked[a.id]).length;
     ctx.shadowColor='#6aaa6a'; ctx.shadowBlur=6; ct(`${total} / ${list.length} UNLOCKED`,CW/2,CH-26,'#6aaa6a',10); ctx.shadowBlur=0;
-    const hint=expert?'L/R:page  A:back':'A:back';
+    const hint='A:back';
     ct(hint,CW/2,CH-10,'#888',10);
 }
 
@@ -1636,10 +1641,8 @@ function handleKey(key, pde) {
         Snd.sfxPlay('nav',cfg.music); phase='menu'; if(pde)pde();
     }
     else if(phase==='achievements'){
-        if(key==='ArrowUp'||key==='ArrowDown') return;
-        const _ea=ACHIEVEMENTS.every(a=>achUnlocked[a.id]);
-        if(_ea&&(key==='ArrowLeft'||key==='ArrowRight')){achPage=1-achPage;Snd.sfxPlay('nav',cfg.music);if(pde)pde();}
-        else{Snd.sfxPlay('nav',cfg.music);phase='menu';if(pde)pde();}
+        if(key==='ArrowUp'||key==='ArrowDown'||key==='ArrowLeft'||key==='ArrowRight') return;
+        Snd.sfxPlay('nav',cfg.music); phase='menu'; if(pde)pde();
     }
     else if(phase==='shop'){
         if(key==='ArrowUp'){ shopSel=(shopSel-1+SHOP_ITEMS.length)%SHOP_ITEMS.length; Snd.sfxPlay('nav',cfg.music); }
@@ -1973,6 +1976,7 @@ function loop(now) {
         }else boosting=false;
         if(now>=stepAt){const es=boosting?Math.max(40,Math.round(speed/20)*10):speed;stepAt=now+es;step(now);}
     }
+    if(heart&&heartIsEarly&&now-heartAt>=10000){heart=null;heartIsEarly=false;}
     if(phase==='levelReady'&&now-phaseAt>=READY_DUR+GO_DUR){
         phase='playing'; stepAt=now+speed; spawnAt=now; phaseAt=0;
     }
