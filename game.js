@@ -216,8 +216,7 @@ function beginLevel() {
             }
         }
     }
-    _tryGouranga(blocked);
-    if(!_gourangaActive) spawnGem();
+    spawnGem();
     renderBarsOffscreen(); Snd.musicGameUnpause(); showHUD(true);
 }
 
@@ -237,6 +236,10 @@ function _tryGouranga(blocked) {
     }
 }
 function spawnGem() {
+    if(!_gourangaActive && level>=2 && (gemsDone===1||gemsDone===2)){
+        _tryGouranga(new Set([...snake,...bars].map(ck)));
+        if(_gourangaActive) return;
+    }
     gem=freeCell(new Set([...snake,...bars].map(ck)));
     const rv=Math.random();
     gem.tier = rv<0.0005 ? 2 : rv<0.0105 ? 1 : 0;
