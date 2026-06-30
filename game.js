@@ -153,7 +153,7 @@ let pauseReadyAt = 0, escReadyAt = 0;
 let perfectLevel = true, levelWasPerfect = false, fireworks = [];
 let levelBonusCount = 0, epicLevelCount = 0;
 let _gourangaLine=[], _gourangaActive=false, _gourangaEaten=new Set();
-let heart=null, heartAt=0, heartIsEarly=false, _earlyHeartUsed=false, _crushEffects=[];
+let heart=null, heartAt=0, heartIsEarly=false, _earlyHeartUsed=false, _earlyHeartTrigger=-1, _earlyHeartCount=0, _crushEffects=[];
 let powerPellet=null, powerPelletAt=0, _powerMode=false, _powerModeAt=0;
 const _POWER_DUR=5500;
 let boostDir=null, boostSince=0, boosting=false;
@@ -182,7 +182,7 @@ function freeCell(blocked) {
     return p;
 }
 
-function startGame() { level=1; lives=START_LIVES; score=0; perfectCount=0; luckyCount=0; _levelStartLen=0; _earlyHeartUsed=false; beginLevel(); }
+function startGame() { level=1; lives=START_LIVES; score=0; perfectCount=0; luckyCount=0; _levelStartLen=0; _earlyHeartUsed=false; _earlyHeartTrigger=Math.floor(Math.random()*30); _earlyHeartCount=0; beginLevel(); }
 
 function beginLevel(isRespawn=false) {
     const lcfg=LEVEL_CFG[level-1], d=DIFF[cfg.diff];
@@ -269,10 +269,13 @@ function spawnGem() {
         if(heart) ppB.add(ck(heart));
         powerPellet=freeCell(ppB); powerPelletAt=performance.now();
     }
-    if(!_earlyHeartUsed&&!heart&&level>=4&&level<=6&&Math.random()<0.10){
-        const hB=new Set([...snake,...bars].map(ck)); hB.add(ck(gem));
-        if(powerPellet) hB.add(ck(powerPellet));
-        heart=freeCell(hB); heartAt=performance.now(); heartIsEarly=true; _earlyHeartUsed=true;
+    if(!_earlyHeartUsed&&level>=4&&level<=6){
+        if(_earlyHeartCount===_earlyHeartTrigger&&!heart){
+            const hB=new Set([...snake,...bars].map(ck)); hB.add(ck(gem));
+            if(powerPellet) hB.add(ck(powerPellet));
+            heart=freeCell(hB); heartAt=performance.now(); heartIsEarly=true; _earlyHeartUsed=true;
+        }
+        _earlyHeartCount++;
     }
 }
 
