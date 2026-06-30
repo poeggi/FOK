@@ -223,12 +223,14 @@ function beginLevel() {
 let gemOptimal=0, gemSteps=0;
 function _tryGouranga(blocked) {
     if(Math.random()>=0.10) return;
-    const horiz=Math.random()<0.5;
+    const dirs=[{dx:1,dy:0},{dx:0,dy:1},{dx:1,dy:1},{dx:1,dy:-1}];
+    const {dx,dy}=dirs[ri(4)];
     for(let tries=0;tries<30;tries++){
-        const sx=horiz?ri(COLS-6):ri(COLS), sy=horiz?ri(ROWS):ri(ROWS-6);
+        const sx=ri(dx?COLS-6:COLS);
+        const sy=dy>0?ri(ROWS-6):dy<0?6+ri(ROWS-6):ri(ROWS);
         const line=[]; let ok=true;
         for(let i=0;i<7;i++){
-            const p={x:horiz?sx+i:sx, y:horiz?sy:sy+i};
+            const p={x:sx+dx*i,y:sy+dy*i};
             if(blocked.has(ck(p))){ok=false;break;}
             line.push(p);
         }
