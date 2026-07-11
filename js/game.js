@@ -239,8 +239,10 @@ function beginLevel(isRespawn=false) {
 let gemOptimal=0, gemSteps=0;
 function _tryGouranga(blocked) {
     if(Math.random()>=0.01) return;
-    const dirs=[{dx:1,dy:0},{dx:0,dy:1},{dx:1,dy:1},{dx:1,dy:-1}];
-    const {dx,dy}=dirs[ri(4)];
+    // Diagonals are rarer (20% combined) than the orthogonal lines
+    const {dx,dy}=Math.random()<0.2
+        ? (Math.random()<0.5?{dx:1,dy:1}:{dx:1,dy:-1})
+        : (Math.random()<0.5?{dx:1,dy:0}:{dx:0,dy:1});
     for(let tries=0;tries<30;tries++){
         const sx=ri(dx?COLS-6:COLS);
         const sy=dy>0?ri(ROWS-6):dy<0?6+ri(ROWS-6):ri(ROWS);
