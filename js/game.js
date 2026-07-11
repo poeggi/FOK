@@ -155,6 +155,9 @@ let _gourangaLine=[], _gourangaActive=false, _gourangaEaten=new Set();
 let heart=null, heartAt=0, heartIsEarly=false, _earlyHeartUsed=false, _earlyHeartTrigger=-1, _earlyHeartCount=0, _crushEffects=[];
 let powerPellet=null, powerPelletAt=0, _powerMode=false, _powerModeAt=0;
 const _POWER_DUR=5500;
+let timeCrystal=null, timeCrystalAt=0, _slowMode=false, _slowModeAt=0;
+const _SLOW_DUR=30000;
+function _lvlSpeed(l){ return LEVEL_CFG[l-1][['easy','normal','hard'][cfg.diff]]; }
 let boostDir=null, boostSince=0, boosting=false;
 const BOOST_GRACE=180;
 function clearBoost(){boostDir=null;boosting=false;}
@@ -203,6 +206,7 @@ function beginLevel(isRespawn=false) {
     _gourangaLine=[]; _gourangaActive=false; _gourangaEaten=new Set();
     heart=null; heartAt=0; heartIsEarly=false; _crushEffects=[];
     powerPellet=null; _powerMode=false;
+    timeCrystal=null; _slowMode=false;
     clearBoost();
     const blocked = new Set([...snake,{x:cx+1,y:cy},{x:cx+2,y:cy}].map(ck));
     const numBars = Math.min(28, Math.round(lcfg.bars * d.bm));
@@ -276,6 +280,13 @@ function spawnGem() {
         if(heart) ppB.add(ck(heart));
         powerPellet=freeCell(ppB); powerPelletAt=performance.now();
     }
+    // Time crystal: level 6+, per-gem chance scales 0.1%/level (L6 0.1% .. L10 0.5%)
+    if(!timeCrystal&&!_slowMode&&level>=6&&Math.random()<(level-5)*0.001){
+        const tcB=new Set([...snake,...bars].map(ck)); tcB.add(ck(gem));
+        if(powerPellet) tcB.add(ck(powerPellet));
+        if(heart) tcB.add(ck(heart));
+        timeCrystal=freeCell(tcB); timeCrystalAt=performance.now();
+    }
     if(!_earlyHeartUsed&&level>=4&&level<=6){
         if(_earlyHeartCount===_earlyHeartTrigger&&!heart){
             const hB=new Set([...snake,...bars].map(ck)); hB.add(ck(gem));
@@ -318,6 +329,7 @@ function step(now) {
         score+=level*200; showBonus(now,'POWER UP!');
     }
     if(heart&&ck(heart)===hk){lives=Math.min(lives+1,START_LIVES+1);heart=null;showBonus(now,'+1 UP!');}
+    if(timeCrystal&&ck(timeCrystal)===hk){timeCrystal=null;_slowMode=true;_slowModeAt=now;speed=_lvlSpeed(3);showBonus(now,'TIME WARP!');}
     const ate=gem&&ck(gem)===hk;
     const ateGourangaIdx=_gourangaActive?_gourangaLine.findIndex((g,i)=>!_gourangaEaten.has(i)&&ck(g)===hk):-1;
     const anyAte=ate||ateGourangaIdx>=0;
@@ -1328,6 +1340,25 @@ function _drawPowerPellet(now) {
     ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
     ctx.restore();
 }
+function _drawTimeCrystal(now) {
+    const cx=timeCrystal.x*CS+CS/2, cy=timeCrystal.y*CS+CS/2, t=(now-timeCrystalAt)/1000;
+    const r=(CS/2-2)*(1+0.12*Math.sin(t*4));
+    ctx.save(); ctx.translate(cx,cy);
+    const grd=ctx.createRadialGradient(0,0,0,0,0,r*2.4);
+    grd.addColorStop(0,'rgba(120,220,255,0.30)'); grd.addColorStop(1,'rgba(120,220,255,0)');
+    ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(0,0,r*2.4,0,Math.PI*2); ctx.fill();
+    ctx.shadowColor='#88e0ff'; ctx.shadowBlur=14;
+    const fg=ctx.createLinearGradient(0,-r,0,r);
+    fg.addColorStop(0,'#ffffff'); fg.addColorStop(0.4,'#88ddff'); fg.addColorStop(1,'#3388cc');
+    ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*0.7,0); ctx.lineTo(0,r); ctx.lineTo(-r*0.7,0); ctx.closePath();
+    ctx.fillStyle=fg; ctx.fill(); ctx.shadowBlur=0;
+    // Sweeping clock hand (one turn per 2s)
+    const a=-Math.PI/2+((t%2)/2)*Math.PI*2;
+    ctx.strokeStyle='rgba(20,40,70,0.85)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*r*0.5,Math.sin(a)*r*0.5); ctx.stroke();
+    ctx.fillStyle='#12345a'; ctx.beginPath(); ctx.arc(0,0,1.4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+}
 function drawGameBoard(now) {
     drawGrid();
     if(_powerMode){
@@ -1339,9 +1370,15 @@ function drawGameBoard(now) {
     } else {
         ctx.drawImage(_barsCanvas,0,0);
     }
+    if(_slowMode){
+        const rem=_SLOW_DUR-(now-_slowModeAt);
+        const a=(rem<3000&&Math.floor(now/200)%2===0)?0.02:0.05+0.03*Math.sin(now/300);
+        ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#2a80c0'; ctx.fillRect(0,0,CW,CH); ctx.restore();
+    }
     if(_gourangaActive) _drawGourangaPending(now);
     if(gem) drawGem(gem,now);
     if(powerPellet) _drawPowerPellet(now);
+    if(timeCrystal) _drawTimeCrystal(now);
     if(heart) _drawHeart(now);
     _drawCrushEffects(now);
     const dying=phase==='dying',flash=dying&&Math.floor((now-phaseAt)/85)%2===1;
@@ -1812,7 +1849,7 @@ canvas.addEventListener('pointerup', e => {
 canvas.addEventListener('touchstart',  e => { if (phase === 'splash') { _splashFast = true; _splashFastStart = performance.now(); _splashFastBase = (performance.now() - phaseAt) / 1000; e.preventDefault(); } }, { passive: false });
 
 const nameInp = document.getElementById('name-inp');
-const SWIPE_1=20, SWIPE_N=30, SWIPE_SAME=50, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=50;
+const SWIPE_1=16, SWIPE_N=24, SWIPE_SAME=50, DZ_LO=40, DZ_HI=50, SWIPE_COOLDOWN=40;
 function _isOpp(a,b){return(a==='ArrowLeft'&&b==='ArrowRight')||(a==='ArrowRight'&&b==='ArrowLeft')||(a==='ArrowUp'&&b==='ArrowDown')||(a==='ArrowDown'&&b==='ArrowUp');}
 let _swipeBase=null, _swipeLastDir=null, _swipeLastMoveAt=0, _swipeLastMovePos=null, _swipeTouchStartAt=0, _swipedThisTouch=false;
 canvas.addEventListener('touchstart',e=>{
@@ -2009,6 +2046,7 @@ function loop(now) {
         if(now>=stepAt){const es=boosting?Math.max(40,Math.round(speed/20)*10):speed;stepAt=now+es;step(now);}
     }
     if(heart&&heartIsEarly&&now-heartAt>=10000){heart=null;heartIsEarly=false;}
+    if(_slowMode&&now-_slowModeAt>=_SLOW_DUR){_slowMode=false;speed=_lvlSpeed(level);}
     if(phase==='levelReady'&&now-phaseAt>=READY_DUR+GO_DUR){
         phase='playing'; stepAt=now+speed; spawnAt=now; phaseAt=0;
     }
