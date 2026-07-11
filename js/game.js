@@ -45,10 +45,9 @@ function addFOKoins(n) {
     _cachedFOKoins += n;
     try { localStorage.setItem(FK_KEY, String(_cachedFOKoins)); } catch {}
     if(_cachedFOKoins >= 5000)    unlockAch('fokoins_1k');
-    if(_cachedFOKoins >= 50000)   unlockAch('fokoins_10k');
-    if(_cachedFOKoins >= 500000)  unlockAch('fokoins_100k');
+    if(_cachedFOKoins >= 100000)  unlockAch('fokoins_10k');
     if(_cachedFOKoins >= 1000000) unlockAch('fokoins_1m');
-    if(_cachedFOKoins >= 5000000) unlockAch('fokoins_5m');
+    if(_cachedFOKoins >= 5000000) unlockAch('fokoins_100k');
 }
 function addScore(name, sc, lvl) {
     const s = getScores();
@@ -85,7 +84,7 @@ function spawnConfetti() {
 }
 function loadAch() { try { achUnlocked = JSON.parse(localStorage.getItem(ACH_KEY) || '{}'); } catch {} }
 function saveAch() { try { localStorage.setItem(ACH_KEY, JSON.stringify(achUnlocked)); } catch {} }
-const EASY_ACHS = new Set(['first_gem','level1','level5','fokoins_1k','fokoins_10k','fokoins_100k']);
+const EASY_ACHS = new Set(['first_gem','level1','level5','fokoins_1k','fokoins_10k','fokoins_1m']);
 function unlockAch(id) {
     if(achUnlocked[id]) return;
     if(cfg.diff === 0 && !EASY_ACHS.has(id)) return;
@@ -676,15 +675,18 @@ function drawAccessoryCrown(hx, hy) {
     ctx.fillStyle='#ff4444'; ctx.fillRect(hx+15,hy-4,2,2);
 }
 
-function drawAccessoryBow(hx, hy) {
+function drawAccessoryBow(hx, hy, facing={x:1,y:0}) {
+    ctx.save();
+    ctx.translate(hx+9,hy+9); ctx.rotate(Math.atan2(facing.y,facing.x));
     ctx.fillStyle='#cc2222';
-    ctx.fillRect(hx+4,hy+7,4,5);   // left wing
-    ctx.fillRect(hx+11,hy+7,4,5);  // right wing
+    ctx.fillRect(-5,-2,4,5);   // left wing
+    ctx.fillRect(2,-2,4,5);    // right wing
     ctx.fillStyle='#ff4444';
-    ctx.fillRect(hx+4,hy+7,4,2);
-    ctx.fillRect(hx+11,hy+7,4,2);
+    ctx.fillRect(-5,-2,4,2);
+    ctx.fillRect(2,-2,4,2);
     ctx.fillStyle='#aa0000';
-    ctx.fillRect(hx+8,hy+8,3,3);   // knot center
+    ctx.fillRect(-1,-1,3,3);   // knot center
+    ctx.restore();
 }
 
 function drawSnake(flash) {
@@ -712,7 +714,7 @@ function drawSnake(flash) {
             const si=cfg.wornItems||{};
             if(si.shades)    drawAccessoryShades(x,y);
             if(si.monocle)   drawAccessoryMonocle(x,y);
-            if(si.bow)       drawAccessoryBow(x,y);
+            if(si.bow)       drawAccessoryBow(x,y,eyeDir);
             if(si.cylinder)  drawAccessoryCylinder(x,y);
             if(si.crown)     drawAccessoryCrown(x,y);
         }
