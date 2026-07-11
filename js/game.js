@@ -84,6 +84,8 @@ function spawnConfetti() {
 }
 function loadAch() { try { achUnlocked = JSON.parse(localStorage.getItem(ACH_KEY) || '{}'); } catch {} }
 function saveAch() { try { localStorage.setItem(ACH_KEY, JSON.stringify(achUnlocked)); } catch {} }
+function announceSeen(){ try{ return !ANNOUNCEMENT||localStorage.getItem('seenAnnounce')===ANNOUNCEMENT.id; }catch{ return true; } }
+function markAnnounceSeen(){ try{ if(ANNOUNCEMENT)localStorage.setItem('seenAnnounce',ANNOUNCEMENT.id); }catch{} }
 const EASY_ACHS = new Set(['first_gem','level1','level5','fokoins_1k','fokoins_10k','fokoins_1m']);
 function unlockAch(id) {
     if(achUnlocked[id]) return;
@@ -902,7 +904,49 @@ function drawSplash(now) {
     }
 }
 
-function drawMenu() {
+function drawNewspaper(now, sel) {
+    const w=30, h=26, x=CW-w-12, y=CH-h-20;
+    ctx.save();
+    if(sel){ ctx.shadowColor='#ffe08a'; ctx.shadowBlur=14; }
+    ctx.fillStyle=sel?'#fff8e0':'#d8d2c0'; ctx.fillRect(x,y,w,h);       // paper
+    ctx.shadowBlur=0;
+    ctx.fillStyle=sel?'#e8dcb0':'#b8b298'; ctx.fillRect(x+w-4,y+2,4,h-2); // folded edge
+    ctx.fillStyle='#2a2a2a'; ctx.fillRect(x+3,y+3,w-9,4);               // masthead
+    ctx.fillStyle=sel?'#555':'#777';
+    for(let i=0;i<4;i++) ctx.fillRect(x+3,y+10+i*4,w-16,2);            // text lines
+    ctx.fillStyle=sel?'#888':'#999'; ctx.fillRect(x+w-11,y+10,8,8);   // photo box
+    ctx.restore();
+    if(!announceSeen()){                                              // unread badge
+        ctx.save(); ctx.fillStyle='#ff3355'; ctx.shadowColor='#ff3355'; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.arc(x+w-2,y+1,3.5+Math.sin(now/220),0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+    ct('NEWS', x+w/2, y+h+8, sel?'#ffe08a':'#4a7a4a', 8);
+}
+function _drawNewspaperPage(now) {
+    const pw=CW-64, ph=CH-64, px=(CW-pw)/2, py=(CH-ph)/2, cx=CW/2;
+    ctx.fillStyle='#e8e2d0'; ctx.fillRect(px,py,pw,ph);              // paper
+    ctx.strokeStyle='#2a2a1e'; ctx.lineWidth=2; ctx.strokeRect(px+3,py+3,pw-6,ph-6);
+    ctx.fillStyle='#1a1a14';                                        // masthead rules
+    ctx.fillRect(px+16,py+22,pw-32,2); ctx.fillRect(px+16,py+58,pw-32,2);
+    ct('NEW SNAKE TIMES', cx, py+41, '#141410', 18);
+    ct('EXTRA * EXTRA * READ ALL ABOUT IT', cx, py+72, '#6a5f4a', 8);
+    const a=ANNOUNCEMENT||{lines:[]};
+    ct(a.headline||'', cx, py+112, '#8a1810', 14);                  // headline
+    let y=py+150;
+    (a.lines||[]).forEach(line=>{ if(line===''){ y+=10; return; } ct(line, cx, y, '#2a281e', 10); y+=22; });
+}
+let _newsAt = 0;
+function drawNews(now) {
+    drawGrid(); drawOvBg(0.92);
+    const t=Math.min(1,(now-_newsAt)/650);                          // retro spin-and-grow open
+    ctx.save();
+    ctx.translate(CW/2,CH/2); ctx.rotate((1-t)*Math.PI*4);
+    const s=0.05+0.95*t; ctx.scale(s,s); ctx.translate(-CW/2,-CH/2);
+    _drawNewspaperPage(now);
+    ctx.restore();
+    if(t>=1) ct('A:back  ESC:back', CW/2, CH-12, '#888', 10);
+}
+function drawMenu(now) {
     drawGrid();
     ctx.drawImage(_scanCanvas, 0, 0);
     ctx.shadowColor='#7fff7f'; ctx.shadowBlur=38;
@@ -911,6 +955,7 @@ function drawMenu() {
     ct('F O K   E D I T I O N',CW/2,122,'#4a7a4a',10);
     const msp=MENU_ITEMS.length<=5?38:30;
     MENU_ITEMS.forEach((item,i)=>menuItem(item,162+i*msp,i===menuSel));
+    if(ANNOUNCEMENT) drawNewspaper(now, menuSel===MENU_ITEMS.length);
     ct(`DIFF:${DIFF[cfg.diff].label}  AUDIO:${cfg.music?'ON':'OFF'}  STYLE:${cfg.musicStyle===0?'NEW':'CLASSIC'}`,CW/2,362,'#4a7a4a',10);
     // Bottom bar: version left, hint center
     ctx.save();
@@ -1650,13 +1695,14 @@ function handleKey(key, pde) {
         }
         if(phase==='resetConfirm'){ phase='settings'; if(pde)pde(); return; }
         if(phase==='settings'){ phase='menu'; Snd.sfxPlay('nav',cfg.music); if(pde)pde(); return; }
-        if(phase==='scores'||phase==='credits'||phase==='shop'){ phase='menu'; Snd.sfxPlay('nav',cfg.music); if(pde)pde(); return; }
+        if(phase==='scores'||phase==='credits'||phase==='shop'||phase==='news'){ phase='menu'; Snd.sfxPlay('nav',cfg.music); if(pde)pde(); return; }
         if(phase==='achievements'){ phase='menu'; Snd.sfxPlay('nav',cfg.music); if(pde)pde(); return; }
     }
 
     if(phase==='menu'){
-        if(key==='ArrowUp')  {menuSel=(menuSel-1+MENU_ITEMS.length)%MENU_ITEMS.length;Snd.sfxPlay('nav',cfg.music);}
-        if(key==='ArrowDown'){menuSel=(menuSel+1)%MENU_ITEMS.length;Snd.sfxPlay('nav',cfg.music);}
+        const menuCount=MENU_ITEMS.length+(ANNOUNCEMENT?1:0);
+        if(key==='ArrowUp')  {menuSel=(menuSel-1+menuCount)%menuCount;Snd.sfxPlay('nav',cfg.music);}
+        if(key==='ArrowDown'){menuSel=(menuSel+1)%menuCount;Snd.sfxPlay('nav',cfg.music);}
         if(key==='Enter'){
             Snd.sfxPlay('select',cfg.music);
             if(menuSel===0)startGame();
@@ -1664,7 +1710,8 @@ function handleKey(key, pde) {
             else if(menuSel===2){phase='scores';_scoreboardCache=getScores();}
             else if(menuSel===3){phase='achievements';achPage=0;}
             else if(menuSel===4){phase='shop';shopSel=0;purchaseAnimAt=0;}
-            else{phase='credits';creditsScroll=CH+40;creditsSpeed=0.8;_creditsNormal=0.8;}
+            else if(menuSel===5){phase='credits';creditsScroll=CH+40;creditsSpeed=0.8;_creditsNormal=0.8;}
+            else if(ANNOUNCEMENT){markAnnounceSeen();phase='news';_newsAt=performance.now();}
             if(pde)pde();
         }
     }
@@ -1710,6 +1757,10 @@ function handleKey(key, pde) {
         Snd.sfxPlay('nav',cfg.music); phase='menu'; if(pde)pde();
     }
     else if(phase==='achievements'){
+        if(key==='ArrowUp'||key==='ArrowDown'||key==='ArrowLeft'||key==='ArrowRight') return;
+        Snd.sfxPlay('nav',cfg.music); phase='menu'; if(pde)pde();
+    }
+    else if(phase==='news'){
         if(key==='ArrowUp'||key==='ArrowDown'||key==='ArrowLeft'||key==='ArrowRight') return;
         Snd.sfxPlay('nav',cfg.music); phase='menu'; if(pde)pde();
     }
@@ -2064,7 +2115,8 @@ function loop(now) {
 
     // Draw
     if     (phase==='splash')       {drawSplash(now);      showHUD(false);}
-    else if(phase==='menu')         {drawMenu();           showHUD(false);}
+    else if(phase==='menu')         {drawMenu(now);        showHUD(false);}
+    else if(phase==='news')         {drawNews(now);        showHUD(false);}
     else if(phase==='settings')     {drawSettings();       showHUD(false);}
     else if(phase==='scores')       {drawScores();         showHUD(false);}
     else if(phase==='achievements') {drawAchievements();   showHUD(false);}

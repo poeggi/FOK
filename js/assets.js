@@ -19,6 +19,14 @@ const SYM_ONE = { w:4, h:6, px:[[2,0],[1,1],[2,1],[2,2],[2,3],[2,4],[2,5]] };
 // "¥": 5x7 yen  (screen: 10x14px)
 const SYM_YEN = { w:5, h:7, px:[[0,0],[4,0],[1,1],[3,1],[2,2],[0,3],[1,3],[2,3],[3,3],[4,3],[2,4],[0,5],[1,5],[2,5],[3,5],[4,5],[2,6]] };
 const DEATH_DUR = 900, LEVELDONE_DUR = 1400, READY_DUR = 1000, GO_DUR = 300;
+// Main-menu announcement. Set to null when there is nothing to announce.
+// The paper is always titled NEW SNAKE TIMES; supply a fresh id (drives the
+// unread badge), a headline, and body lines ('' makes a blank gap line).
+const ANNOUNCEMENT = { id:'multiplayer-soon', headline:'WE ARE BEEFING THINGS UP!', lines:[
+    'A new MULTIPLAYER feature',
+    'is coming soon.',
+    '',
+    'Stay tuned.' ] };
 const MAX_NAME = 15;
 const NAME_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!?.,\'"#$@&()[]:+ \r';
 
