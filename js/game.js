@@ -956,7 +956,7 @@ function drawSplash(now) {
 }
 
 function drawNewspaper(now, sel) {
-    const w=30, h=26, x=CW-w-20, y=CH-h-20;
+    const w=30, h=26, x=CW-w-20, y=CH-h-30;
     ctx.save();
     if(sel){ ctx.shadowColor='#ffe08a'; ctx.shadowBlur=14; }
     ctx.fillStyle=sel?'#fff8e0':'#d8d2c0'; ctx.fillRect(x,y,w,h);       // paper
