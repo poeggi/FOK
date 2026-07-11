@@ -1006,7 +1006,7 @@ function drawNews(now) {
 function drawSplashText(now) {
     if(!_splashText) return;
     ctx.save();
-    ctx.translate(CW*0.75, 104); ctx.rotate(-0.34);
+    ctx.translate(CW*0.78, 120); ctx.rotate(-0.34);
     ctx.scale(1+0.10*Math.abs(Math.sin(now/300)), 1+0.10*Math.abs(Math.sin(now/300)));
     ctx.font='10px "Press Start 2P"'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle='#3a2a00'; ctx.fillText(_splashText, 1.5, 1.5);   // retro drop shadow
