@@ -1770,7 +1770,7 @@ function handleKey(key, pde) {
                 Snd.sfxPlay('nav',cfg.music);
             }
         }
-        else if(key.length===1&&/^[A-Z0-9_ ]$/i.test(key)){
+        else if(key.length===1&&NAME_CHARS.includes(key.toUpperCase())){
             const ch=key.toUpperCase();
             if(nameCursorPos<nameStr.length){nameStr=nameStr.slice(0,nameCursorPos)+ch+nameStr.slice(nameCursorPos+1);nameCursorPos=Math.min(nameCursorPos+1,nameStr.length);}
             else if(nameStr.length<MAX_NAME){nameStr+=ch;nameCursorPos++;}
