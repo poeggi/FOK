@@ -1,5 +1,11 @@
 # Snake - FOK Edition
 
+> **This version is now legacy (stale).** Active development has moved to
+> **[FOK-snake](https://github.com/poeggi/FOK-snake)** -- the new version, rebuilt
+> on a deterministic game engine and adding online multiplayer. All new features
+> land there. This repo is kept as the classic single-player build and is no longer
+> updated.
+
 Snake FOK Edition uses classic Snake as its starting point, but it is as much a love letter to retro arcade gaming as it is a Snake clone. Power pellets, bonus multiplier chains, border barricades that crumble on impact, extra lives hidden across levels -- it all adds up to something that feels like flipping through an arcade cabinet catalogue from the 1980s.
 
 **Play online:** https://poeggi.github.io/FOK/
