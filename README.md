@@ -1,6 +1,7 @@
 # Snake - FOK Edition
 
-> **This version is now legacy (stale).** Active development has moved to
+> [!CAUTION]
+> **THIS REPO IS OBSOLETE.** Active development has moved to
 > **[FOK-snake](https://github.com/poeggi/FOK-snake)** -- the new version, rebuilt
 > on a deterministic game engine and adding online multiplayer. All new features
 > land there. This repo is kept as the classic single-player build and is no longer

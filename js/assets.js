@@ -22,15 +22,15 @@ const DEATH_DUR = 900, LEVELDONE_DUR = 1400, READY_DUR = 1000, GO_DUR = 300;
 // Main-menu announcement. Set to null when there is nothing to announce.
 // The paper is always titled NEW SNAKE TIMES; supply a fresh id (drives the
 // unread badge), a headline, and body lines ('' makes a blank gap line).
-const ANNOUNCEMENT = { id:'v1.2.0', headline:'WE ARE BEEFING THINGS UP!', lines:[
-    'NEW IN v1.2:',
-    'Time Crystal in levels 6+',
-    'Shop page 2 - 5 new items',
-    'Smileys in your name',
-    'Snappier touch controls',
+const ANNOUNCEMENT = { id:'fok-snake-move', headline:'THE SNAKE HAS MOVED!', lines:[
+    'This version is now legacy.',
+    'All new features land in',
+    'the new FOK-snake edition:',
     '',
-    'MULTIPLAYER coming soon.',
-    'Stay tuned!' ] };
+    'poeggi.github.io/FOK-snake',
+    '',
+    'New engine. MULTIPLAYER',
+    'in the works. See you there!' ] };
 // Minecraft-style title splash lines; one is picked at random each load.
 // Keep them short and ASCII so they fit the tilted, pulsing draw.
 const SPLASHES = [
